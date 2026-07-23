@@ -1,0 +1,1 @@
+The zip file contains two utilities (i) Utility for Windows and (ii) Utility for MAC

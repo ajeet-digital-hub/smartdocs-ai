@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS services (
+  id VARCHAR(100) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  category VARCHAR(100) NOT NULL,
+  icon VARCHAR(20) NOT NULL,
+  tags JSON NOT NULL,
+  popular BOOLEAN DEFAULT FALSE,
+  trending BOOLEAN DEFAULT FALSE,
+  new BOOLEAN DEFAULT FALSE,
+  sortOrder INT DEFAULT 0,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_category (category),
+  INDEX idx_popular (popular),
+  INDEX idx_trending (trending),
+  INDEX idx_new (new)
+);
+

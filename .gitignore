@@ -1,0 +1,66 @@
+# Environment files (secrets)
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Next.js
+.next/
+out/
+
+# Build
+build/
+dist/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Misc
+.DS_Store
+*.pem
+
+# IDE
+.vscode/
+.idea/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Vercel
+.vercel
+
+# Coverage
+coverage/
+
+# Large binaries / installers
+*.exe
+*.msi
+*.zip
+*.7z
+*.rar
+*.tar.gz
+*.iso
+public/*.exe
+public/*.msi
+public/*.zip
+
+# Remove from tracking if accidentally added
+frontend/public/Claude Setup.exe
+frontend/public/node-v22.11.0-x64.msi
+frontend/public/mango-cherry-74-072226.zip
+frontend/public/xampp-windows-x64-8.2.12-0-VS16-installer.exe
+frontend/public/emBridge_0.zip
+frontend/public/TRACES-WebSigner-V2.0.zip
+frontend/public/TRACES-WebSigner-V2.0/TDSSigner-Setup/emSigner.msi
+frontend/public/emBridge_0/DSC Utility/emBridge Mac Utility.zip
+frontend/public/emBridge_0/DSC Utility/emBridge Windows Utility.zip
+frontend/public/emBridge_0/DSC Utility/emBridge Windows Utility/emBridge.exe
+

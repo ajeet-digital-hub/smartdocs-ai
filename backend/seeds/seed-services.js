@@ -1,0 +1,420 @@
+const db = require('../db');
+
+// Services data matching the frontend's Service interface
+const servicesData = [
+  // ─── Phase 1: Photo Tools ───
+  { id: "passport-photo-maker", name: "Passport Size Photo Maker", description: "Create professional passport and visa photos with AI", category: "Image Studio", icon: "📸", tags: ["passport", "photo", "visa"], popular: true, trending: true, new: false },
+  { id: "image-resize", name: "Image Resize", description: "Resize images to any dimension for any requirement", category: "Image Studio", icon: "📏", tags: ["resize", "image", "dimensions"], popular: true, trending: false, new: false },
+  { id: "image-crop", name: "Image Crop", description: "Crop and adjust images with precision tools", category: "Image Studio", icon: "✂️", tags: ["crop", "image", "cut"], popular: true, trending: false, new: false },
+  { id: "image-download", name: "Download Images (PNG/JPG/PDF)", description: "Download processed images in PNG, JPG, or PDF formats", category: "Image Studio", icon: "⬇️", tags: ["download", "png", "jpg", "pdf"], popular: true, trending: false, new: false },
+  // ─── Phase 2: ID Card Maker & Manager ───
+  { id: "id-card-maker", name: "ID Card Maker", description: "Create professional ID cards for any organization", category: "Design Studio", icon: "🪪", tags: ["id card", "badge", "identification"], popular: true, trending: true, new: false },
+  { id: "school-id-maker", name: "School ID Maker", description: "Design student and staff ID cards for schools", category: "Design Studio", icon: "🎒", tags: ["school", "id card", "student"], popular: false, trending: false, new: false },
+  { id: "employee-id-maker", name: "Employee ID Maker", description: "Create corporate employee ID badges", category: "Design Studio", icon: "👔", tags: ["employee", "id card", "corporate"], popular: false, trending: false, new: false },
+  { id: "barcode-generator", name: "Barcode Generator", description: "Generate barcodes for products and ID cards", category: "Design Studio", icon: "📊", tags: ["barcode", "code", "scan"], popular: false, trending: false, new: false },
+  { id: "id-card-pdf-download", name: "ID Card PDF Download", description: "Export ID cards as printable PDF documents", category: "Design Studio", icon: "⬇️", tags: ["download", "pdf", "id card"], popular: false, trending: false, new: false },
+  // ─── Phase 3: Resume Builder Extended ───
+  { id: "ats-resume-builder", name: "ATS Resume Builder", description: "Build ATS-optimized resumes that pass screening systems", category: "Document Suite", icon: "📄", tags: ["ats", "resume", "screening"], popular: true, trending: true, new: false },
+  { id: "ai-resume-generator", name: "AI Resume Generator", description: "Generate a complete resume from your job history using AI", category: "Document Suite", icon: "🤖", tags: ["ai", "resume", "generate"], popular: true, trending: true, new: true },
+  { id: "resume-pdf-download", name: "Resume PDF Export", description: "Export your resume as a professional PDF document", category: "Document Suite", icon: "⬇️", tags: ["resume", "pdf", "download"], popular: false, trending: false, new: false },
+  // ─── Phase 4: Social Media Designer Extended ───
+  { id: "instagram-post-creator", name: "Instagram Post Creator", description: "Design stunning Instagram posts and stories", category: "Image Studio", icon: "📱", tags: ["instagram", "post", "social"], popular: true, trending: true, new: false },
+  { id: "facebook-cover-creator", name: "Facebook Cover Creator", description: "Create professional Facebook cover photos", category: "Image Studio", icon: "📘", tags: ["facebook", "cover", "social"], popular: false, trending: false, new: false },
+  { id: "linkedin-banner-creator", name: "LinkedIn Banner Creator", description: "Design LinkedIn profile banners and backgrounds", category: "Image Studio", icon: "💼", tags: ["linkedin", "banner", "professional"], popular: false, trending: false, new: false },
+  { id: "youtube-thumbnail-creator", name: "YouTube Thumbnail Creator", description: "Create clickable YouTube video thumbnails", category: "Image Studio", icon: "▶️", tags: ["youtube", "thumbnail", "video"], popular: true, trending: false, new: false },
+  { id: "ready-made-templates", name: "Ready-Made Templates", description: "Browse and use professional pre-designed templates", category: "Design Studio", icon: "📋", tags: ["templates", "design", "premade"], popular: true, trending: false, new: false },
+  // ─── Phase 5: PDF Tools Extended ───
+  { id: "word-to-pdf", name: "Word to PDF Converter", description: "Convert Word documents to PDF format", category: "PDF Suite", icon: "📝", tags: ["word", "pdf", "convert"], popular: true, trending: false, new: false },
+  { id: "excel-to-pdf", name: "Excel to PDF Converter", description: "Convert Excel spreadsheets to PDF format", category: "PDF Suite", icon: "📊", tags: ["excel", "pdf", "convert"], popular: false, trending: false, new: false },
+  { id: "ppt-to-pdf", name: "PPT to PDF Converter", description: "Convert PowerPoint presentations to PDF format", category: "PDF Suite", icon: "📽️", tags: ["ppt", "pdf", "convert"], popular: false, trending: false, new: false },
+  { id: "pdf-to-txt", name: "PDF to Text Converter", description: "Extract text content from PDF files", category: "PDF Suite", icon: "📃", tags: ["pdf", "text", "extract"], popular: false, trending: false, new: false },
+  // ─── Phase 7: Additional Professional Tools ───
+  { id: "photo-collage-maker", name: "Photo Collage Maker", description: "Create beautiful photo collages with templates", category: "Image Studio", icon: "🖼️", tags: ["collage", "photo", "template"], popular: false, trending: false, new: true },
+  { id: "watermark-remover", name: "Watermark Remover", description: "Remove watermarks from images using AI", category: "Image Studio", icon: "✨", tags: ["watermark", "remove", "ai"], popular: false, trending: true, new: true },
+  { id: "image-to-text", name: "Image to Text Extractor", description: "Extract text from images with OCR technology", category: "Image Studio", icon: "🔍", tags: ["ocr", "text", "extract"], popular: false, trending: false, new: false },
+  { id: "batch-image-processor", name: "Batch Image Processor", description: "Process multiple images simultaneously", category: "Image Studio", icon: "⚡", tags: ["batch", "process", "images"], popular: false, trending: false, new: false },
+  { id: "ai-logo-maker", name: "AI Logo Maker", description: "Create custom logos with artificial intelligence", category: "Image Studio", icon: "🔤", tags: ["logo", "ai", "brand"], popular: true, trending: true, new: true },
+  // ─── PDF Suite (25) ───
+  { id: "pdf-editor", name: "PDF Editor", description: "Edit PDF files with text, images, and annotations", category: "PDF Suite", icon: "📄", tags: ["pdf", "edit", "text"], popular: true, trending: true, new: false },
+  { id: "merge-pdf", name: "Merge PDF", description: "Combine multiple PDF files into one document", category: "PDF Suite", icon: "📑", tags: ["pdf", "merge", "combine"], popular: true, trending: false, new: false },
+  { id: "split-pdf", name: "Split PDF", description: "Split PDF files into separate documents by page", category: "PDF Suite", icon: "✂️", tags: ["pdf", "split", "pages"], popular: true, trending: false, new: false },
+  { id: "compress-pdf", name: "Compress PDF", description: "Reduce PDF file size without quality loss", category: "PDF Suite", icon: "🗜️", tags: ["pdf", "compress", "size"], popular: true, trending: false, new: false },
+  { id: "ocr-pdf", name: "OCR PDF", description: "Extract text from scanned PDFs using AI OCR", category: "PDF Suite", icon: "🔍", tags: ["pdf", "ocr", "scan"], popular: true, trending: true, new: false },
+  { id: "ai-pdf-chat", name: "AI PDF Chat", description: "Chat with any PDF document using AI", category: "PDF Suite", icon: "💬", tags: ["pdf", "ai", "chat"], popular: true, trending: true, new: true },
+  { id: "pdf-summarizer", name: "PDF Summarizer", description: "Generate AI summaries of long PDF documents", category: "PDF Suite", icon: "📋", tags: ["pdf", "summarize", "ai"], popular: false, trending: true, new: true },
+  { id: "pdf-translator", name: "PDF Translator", description: "Translate PDF documents to any language instantly", category: "PDF Suite", icon: "🌐", tags: ["pdf", "translate", "language"], popular: false, trending: true, new: false },
+  { id: "pdf-redaction", name: "PDF Redaction", description: "Permanently remove sensitive content from PDFs", category: "PDF Suite", icon: "🕵️", tags: ["pdf", "redact", "security"], popular: false, trending: false, new: false },
+  { id: "protect-pdf", name: "Protect PDF", description: "Add password protection and encryption to PDFs", category: "PDF Suite", icon: "🔒", tags: ["pdf", "protect", "password"], popular: true, trending: false, new: false },
+  { id: "unlock-pdf", name: "Unlock PDF", description: "Remove password protection from PDF files", category: "PDF Suite", icon: "🔓", tags: ["pdf", "unlock", "password"], popular: true, trending: false, new: false },
+  { id: "sign-pdf", name: "Sign PDF", description: "Add digital signatures to PDF documents", category: "PDF Suite", icon: "✍️", tags: ["pdf", "sign", "signature"], popular: true, trending: false, new: false },
+  { id: "fill-forms", name: "Fill Forms", description: "Fill out PDF forms electronically", category: "PDF Suite", icon: "📝", tags: ["pdf", "forms", "fill"], popular: false, trending: false, new: false },
+  { id: "rotate-pages", name: "Rotate Pages", description: "Rotate PDF pages to the correct orientation", category: "PDF Suite", icon: "🔄", tags: ["pdf", "rotate", "pages"], popular: false, trending: false, new: false },
+  { id: "extract-pages", name: "Extract Pages", description: "Extract selected pages from PDF documents", category: "PDF Suite", icon: "📌", tags: ["pdf", "extract", "pages"], popular: false, trending: false, new: false },
+  { id: "delete-pages", name: "Delete Pages", description: "Remove unwanted pages from PDF files", category: "PDF Suite", icon: "🗑️", tags: ["pdf", "delete", "pages"], popular: false, trending: false, new: false },
+  { id: "compare-pdfs", name: "Compare PDFs", description: "Find differences between two PDF documents", category: "PDF Suite", icon: "⚖️", tags: ["pdf", "compare", "diff"], popular: false, trending: false, new: false },
+  { id: "pdf-to-word", name: "Convert PDF to Word", description: "Convert PDF files to editable Word documents", category: "PDF Suite", icon: "📝", tags: ["pdf", "convert", "word"], popular: true, trending: false, new: false },
+  { id: "pdf-to-excel", name: "Convert PDF to Excel", description: "Extract PDF tables into Excel spreadsheets", category: "PDF Suite", icon: "📊", tags: ["pdf", "convert", "excel"], popular: true, trending: false, new: false },
+  { id: "pdf-to-ppt", name: "Convert PDF to PPT", description: "Convert PDF files to PowerPoint presentations", category: "PDF Suite", icon: "📽️", tags: ["pdf", "convert", "ppt"], popular: false, trending: false, new: false },
+  { id: "pdf-to-html", name: "Convert PDF to HTML", description: "Convert PDF documents to web HTML pages", category: "PDF Suite", icon: "🌐", tags: ["pdf", "convert", "html"], popular: false, trending: false, new: false },
+  { id: "pdf-to-jpg", name: "Convert PDF to JPG", description: "Convert PDF pages to high-quality JPG images", category: "PDF Suite", icon: "🖼️", tags: ["pdf", "convert", "jpg"], popular: true, trending: false, new: false },
+  { id: "jpg-to-pdf", name: "Convert JPG to PDF", description: "Convert JPG images to PDF documents", category: "PDF Suite", icon: "🖼️", tags: ["jpg", "convert", "pdf"], popular: true, trending: false, new: false },
+  { id: "pdf-to-png", name: "Convert PDF to PNG", description: "Convert PDF pages to transparent PNG images", category: "PDF Suite", icon: "🖼️", tags: ["pdf", "convert", "png"], popular: false, trending: false, new: false },
+  { id: "pdf-to-epub", name: "Convert PDF to EPUB", description: "Convert PDF files to ebook EPUB format", category: "PDF Suite", icon: "📚", tags: ["pdf", "convert", "epub"], popular: false, trending: false, new: false },
+  // ─── Document Suite (13) ───
+  { id: "ai-document-editor", name: "AI Document Editor", description: "Create and edit documents with AI-powered assistance", category: "Document Suite", icon: "📝", tags: ["document", "edit", "ai"], popular: true, trending: true, new: true },
+  { id: "rich-text-editor", name: "Rich Text Editor", description: "Format documents with rich text styling tools", category: "Document Suite", icon: "✏️", tags: ["document", "editor", "text"], popular: true, trending: false, new: false },
+  { id: "resume-builder", name: "Resume Builder", description: "Build professional ATS-optimized resumes", category: "Document Suite", icon: "📄", tags: ["resume", "career", "ats"], popular: true, trending: true, new: false },
+  { id: "cover-letter", name: "Cover Letter", description: "Generate tailored cover letters for any job", category: "Document Suite", icon: "✉️", tags: ["cover letter", "career", "job"], popular: true, trending: false, new: false },
+  { id: "proposal-generator", name: "Proposal Generator", description: "Create professional business proposals quickly", category: "Document Suite", icon: "📋", tags: ["proposal", "business"], popular: false, trending: false, new: false },
+  { id: "contract-generator", name: "Contract Generator", description: "Generate legal contracts and agreements", category: "Document Suite", icon: "⚖️", tags: ["contract", "legal"], popular: false, trending: false, new: false },
+  { id: "invoice-generator", name: "Invoice Generator", description: "Create and send professional invoices", category: "Document Suite", icon: "💰", tags: ["invoice", "business", "finance"], popular: true, trending: false, new: false },
+  { id: "report-builder", name: "Report Builder", description: "Build comprehensive reports with data visualizations", category: "Document Suite", icon: "📊", tags: ["report", "analytics"], popular: false, trending: false, new: false },
+  { id: "letter-writer", name: "Letter Writer", description: "Write formal and informal letters with AI", category: "Document Suite", icon: "💌", tags: ["letter", "writing"], popular: false, trending: false, new: false },
+  { id: "policy-generator", name: "Policy Generator", description: "Create company policies and procedure documents", category: "Document Suite", icon: "📜", tags: ["policy", "hr", "compliance"], popular: false, trending: false, new: false },
+  { id: "sop-generator", name: "SOP Generator", description: "Generate standard operating procedure documents", category: "Document Suite", icon: "📋", tags: ["sop", "procedure"], popular: false, trending: false, new: false },
+  { id: "meeting-minutes", name: "Meeting Minutes", description: "Auto-generate meeting notes and action items", category: "Document Suite", icon: "📝", tags: ["meeting", "notes"], popular: false, trending: false, new: false },
+  { id: "documentation-generator", name: "Documentation Generator", description: "Create technical documentation with AI", category: "Document Suite", icon: "📚", tags: ["docs", "technical"], popular: false, trending: false, new: false },
+  // ─── AI Assistant (16) ───
+  { id: "ai-chat", name: "AI Chat", description: "Conversational AI assistant for any query", category: "AI Assistant", icon: "💬", tags: ["chat", "ai", "assistant"], popular: true, trending: true, new: false },
+  { id: "ai-writer", name: "AI Writer", description: "Generate high-quality content with AI writing", category: "AI Assistant", icon: "✍️", tags: ["writing", "content", "ai"], popular: true, trending: true, new: false },
+  { id: "ai-research", name: "AI Research", description: "Conduct deep research on any topic with AI", category: "AI Assistant", icon: "🔬", tags: ["research", "ai"], popular: true, trending: true, new: true },
+  { id: "ai-translator", name: "AI Translator", description: "Translate text between 100+ languages instantly", category: "AI Assistant", icon: "🌐", tags: ["translate", "language", "ai"], popular: true, trending: false, new: false },
+  { id: "ai-summarizer", name: "AI Summarizer", description: "Summarize long articles and documents instantly", category: "AI Assistant", icon: "📋", tags: ["summarize", "ai"], popular: true, trending: false, new: false },
+  { id: "ai-grammar-checker", name: "AI Grammar Checker", description: "Fix grammar, spelling, and style errors", category: "AI Assistant", icon: "✅", tags: ["grammar", "spelling", "writing"], popular: true, trending: false, new: false },
+  { id: "ai-rewriter", name: "AI Rewriter", description: "Rewrite text with different styles and tones", category: "AI Assistant", icon: "🔄", tags: ["rewrite", "paraphrase"], popular: false, trending: false, new: false },
+  { id: "ai-coding-assistant", name: "AI Coding Assistant", description: "Get AI help writing and debugging code", category: "AI Assistant", icon: "💻", tags: ["coding", "programming", "ai"], popular: true, trending: true, new: false },
+  { id: "ai-sql-generator", name: "AI SQL Generator", description: "Generate SQL queries from natural language", category: "AI Assistant", icon: "🗄️", tags: ["sql", "database", "ai"], popular: false, trending: true, new: true },
+  { id: "ai-presentation-generator", name: "AI Presentation Generator", description: "Create stunning presentations with AI", category: "AI Assistant", icon: "📽️", tags: ["presentation", "slides", "ai"], popular: true, trending: true, new: false },
+  { id: "ai-spreadsheet-assistant", name: "AI Spreadsheet Assistant", description: "Analyze data and generate spreadsheet formulas", category: "AI Assistant", icon: "📊", tags: ["spreadsheet", "excel", "ai"], popular: false, trending: false, new: false },
+  { id: "ai-resume-reviewer", name: "AI Resume Reviewer", description: "Get AI feedback on your resume quality", category: "AI Assistant", icon: "📄", tags: ["resume", "review", "career"], popular: false, trending: false, new: false },
+  { id: "ai-interview-coach", name: "AI Interview Coach", description: "Practice interviews with AI feedback", category: "AI Assistant", icon: "🎯", tags: ["interview", "career", "coach"], popular: false, trending: false, new: false },
+  { id: "ai-business-consultant", name: "AI Business Consultant", description: "Get strategic business advice from AI", category: "AI Assistant", icon: "💼", tags: ["business", "consulting", "strategy"], popular: false, trending: false, new: false },
+  { id: "ai-data-extractor", name: "AI Data Extractor", description: "Extract structured data from any document", category: "AI Assistant", icon: "📎", tags: ["data", "extract", "ai"], popular: false, trending: false, new: true },
+  { id: "ai-workflow-automator", name: "AI Workflow Automator", description: "Automate repetitive tasks with AI workflows", category: "AI Assistant", icon: "⚡", tags: ["automation", "workflow", "ai"], popular: false, trending: true, new: true },
+  // ─── Image Studio (15) ───
+  { id: "ai-image-generator", name: "AI Image Generator", description: "Generate stunning images from text prompts", category: "Image Studio", icon: "🎨", tags: ["image", "generate", "ai"], popular: true, trending: true, new: true },
+  { id: "ai-photo-editor", name: "AI Photo Editor", description: "Edit photos with intelligent AI tools", category: "Image Studio", icon: "📷", tags: ["photo", "edit", "ai"], popular: true, trending: true, new: false },
+  { id: "background-remover", name: "Background Remover", description: "Remove image backgrounds instantly with AI", category: "Image Studio", icon: "✂️", tags: ["background", "remove"], popular: true, trending: true, new: false },
+  { id: "magic-eraser", name: "Magic Eraser", description: "Remove unwanted objects from photos", category: "Image Studio", icon: "🧹", tags: ["erase", "remove", "object"], popular: true, trending: false, new: false },
+  { id: "image-upscaler", name: "Image Upscaler", description: "Enhance and upscale image resolution with AI", category: "Image Studio", icon: "🔍", tags: ["upscale", "enhance", "resolution"], popular: true, trending: false, new: false },
+  { id: "face-retouch", name: "Face Retouch", description: "Perfect facial features with AI retouching", category: "Image Studio", icon: "✨", tags: ["face", "retouch", "beauty"], popular: false, trending: false, new: false },
+  { id: "portrait-generator", name: "Portrait Generator", description: "Create AI-generated professional portraits", category: "Image Studio", icon: "👤", tags: ["portrait", "ai", "professional"], popular: false, trending: true, new: true },
+  { id: "logo-maker", name: "Logo Maker", description: "Design professional logos with AI", category: "Image Studio", icon: "🔤", tags: ["logo", "brand", "design"], popular: true, trending: false, new: false },
+  { id: "banner-creator", name: "Banner Creator", description: "Create stunning banners for web and print", category: "Image Studio", icon: "🖼️", tags: ["banner", "design"], popular: false, trending: false, new: false },
+  { id: "thumbnail-creator", name: "Thumbnail Creator", description: "Design eye-catching video thumbnails", category: "Image Studio", icon: "🖼️", tags: ["thumbnail", "youtube", "video"], popular: false, trending: false, new: false },
+  { id: "social-media-post-creator", name: "Social Media Post Creator", description: "Create engaging social media graphics", category: "Image Studio", icon: "📱", tags: ["social", "post", "graphic"], popular: true, trending: false, new: false },
+  { id: "icon-generator", name: "Icon Generator", description: "Generate custom icons for apps and websites", category: "Image Studio", icon: "🔲", tags: ["icon", "design", "ui"], popular: false, trending: false, new: false },
+  { id: "sticker-generator", name: "Sticker Generator", description: "Create custom stickers for messaging apps", category: "Image Studio", icon: "😊", tags: ["sticker", "fun"], popular: false, trending: false, new: false },
+  { id: "qr-generator", name: "QR Generator", description: "Generate QR codes for links and content", category: "Image Studio", icon: "📱", tags: ["qr", "code", "scan"], popular: true, trending: false, new: false },
+  { id: "product-mockup", name: "Product Mockup Generator", description: "Create realistic product mockup images", category: "Image Studio", icon: "📦", tags: ["mockup", "product", "design"], popular: false, trending: false, new: false },
+  // ─── Video Studio (10) ───
+  { id: "video-editor", name: "Video Editor", description: "Edit videos with professional tools and effects", category: "Video Studio", icon: "🎬", tags: ["video", "edit"], popular: true, trending: true, new: false },
+  { id: "subtitle-generator", name: "Subtitle Generator", description: "Auto-generate subtitles for any video", category: "Video Studio", icon: "📝", tags: ["subtitle", "caption", "video"], popular: true, trending: false, new: false },
+  { id: "ai-voiceover", name: "AI Voiceover", description: "Generate natural voiceovers with AI voices", category: "Video Studio", icon: "🎙️", tags: ["voiceover", "ai", "voice"], popular: true, trending: true, new: true },
+  { id: "screen-recorder", name: "Screen Recorder", description: "Record your screen with audio and webcam", category: "Video Studio", icon: "🖥️", tags: ["screen", "record", "capture"], popular: true, trending: false, new: false },
+  { id: "video-compressor", name: "Video Compressor", description: "Reduce video file size without quality loss", category: "Video Studio", icon: "🗜️", tags: ["video", "compress", "size"], popular: false, trending: false, new: false },
+  { id: "video-converter", name: "Video Converter", description: "Convert videos between any formats", category: "Video Studio", icon: "🔄", tags: ["video", "convert", "format"], popular: false, trending: false, new: false },
+  { id: "gif-maker", name: "GIF Maker", description: "Create GIFs from videos and images", category: "Video Studio", icon: "🎞️", tags: ["gif", "animated"], popular: true, trending: false, new: false },
+  { id: "reel-generator", name: "Reel Generator", description: "Create Instagram Reels and TikTok videos", category: "Video Studio", icon: "📱", tags: ["reel", "tiktok", "short"], popular: false, trending: true, new: false },
+  { id: "short-video-generator", name: "Short Video Generator", description: "Generate short-form videos for social media", category: "Video Studio", icon: "🎥", tags: ["short", "video", "social"], popular: false, trending: true, new: false },
+  { id: "ai-avatar", name: "AI Avatar", description: "Create AI-powered talking avatars for videos", category: "Video Studio", icon: "👤", tags: ["avatar", "ai", "video"], popular: false, trending: true, new: true },
+  // ─── Audio Studio (8) ───
+  { id: "text-to-speech", name: "Text to Speech", description: "Convert text to natural-sounding speech", category: "Audio Studio", icon: "🔊", tags: ["tts", "speech", "audio"], popular: true, trending: true, new: false },
+  { id: "speech-to-text", name: "Speech to Text", description: "Transcribe audio to text with high accuracy", category: "Audio Studio", icon: "🎤", tags: ["stt", "transcribe", "audio"], popular: true, trending: false, new: false },
+  { id: "audio-recorder", name: "Audio Recorder", description: "Record high-quality audio directly", category: "Audio Studio", icon: "⏺️", tags: ["record", "audio"], popular: false, trending: false, new: false },
+  { id: "noise-removal", name: "Noise Removal", description: "Remove background noise from audio files", category: "Audio Studio", icon: "🔇", tags: ["noise", "remove", "audio"], popular: true, trending: false, new: false },
+  { id: "audio-editor", name: "Audio Editor", description: "Edit audio files with cut, trim, and effects", category: "Audio Studio", icon: "🎛️", tags: ["audio", "edit", "trim"], popular: false, trending: false, new: false },
+  { id: "voice-changer", name: "Voice Changer", description: "Apply fun voice effects and filters", category: "Audio Studio", icon: "🎭", tags: ["voice", "change", "effect"], popular: false, trending: false, new: false },
+  { id: "podcast-generator", name: "Podcast Generator", description: "Create podcasts with AI voices and editing", category: "Audio Studio", icon: "🎙️", tags: ["podcast", "audio", "ai"], popular: false, trending: true, new: true },
+  { id: "music-composer", name: "Music Composer", description: "Compose original music with AI assistance", category: "Audio Studio", icon: "🎵", tags: ["music", "compose", "ai"], popular: false, trending: false, new: false },
+  // ─── Business (15) ───
+  { id: "invoice-generator-biz", name: "Invoice Generator", description: "Create professional invoices for your business", category: "Business", icon: "💰", tags: ["invoice", "billing"], popular: true, trending: false, new: false },
+  { id: "quotation-generator", name: "Quotation Generator", description: "Generate quotes and estimates for clients", category: "Business", icon: "📄", tags: ["quote", "estimate"], popular: false, trending: false, new: false },
+  { id: "business-proposal", name: "Business Proposal", description: "Create winning business proposals", category: "Business", icon: "📋", tags: ["proposal", "business"], popular: true, trending: false, new: false },
+  { id: "contract-builder", name: "Contract Builder", description: "Build and manage business contracts", category: "Business", icon: "⚖️", tags: ["contract", "legal"], popular: false, trending: false, new: false },
+  { id: "crm-assistant", name: "CRM Assistant", description: "Manage customer relationships with AI", category: "Business", icon: "🤝", tags: ["crm", "customer"], popular: false, trending: false, new: false },
+  { id: "erp-assistant", name: "ERP Assistant", description: "Streamline enterprise resource planning", category: "Business", icon: "🏢", tags: ["erp", "enterprise"], popular: false, trending: false, new: false },
+  { id: "hr-assistant", name: "HR Assistant", description: "Automate HR tasks and employee management", category: "Business", icon: "👥", tags: ["hr", "human resources"], popular: false, trending: false, new: false },
+  { id: "payroll-tools", name: "Payroll Tools", description: "Manage payroll and employee compensation", category: "Business", icon: "💵", tags: ["payroll", "salary"], popular: false, trending: false, new: false },
+  { id: "expense-tracker", name: "Expense Tracker", description: "Track and manage business expenses", category: "Business", icon: "💳", tags: ["expense", "tracking"], popular: true, trending: false, new: false },
+  { id: "inventory-manager", name: "Inventory Manager", description: "Manage stock levels and inventory", category: "Business", icon: "📦", tags: ["inventory", "stock"], popular: false, trending: false, new: false },
+  { id: "financial-reporter", name: "Financial Reporter", description: "Generate financial reports and statements", category: "Business", icon: "📊", tags: ["finance", "report"], popular: false, trending: false, new: false },
+  { id: "tax-calculator", name: "Tax Calculator", description: "Estimate taxes and plan deductions", category: "Business", icon: "🧾", tags: ["tax", "calculator"], popular: false, trending: false, new: false },
+  { id: "business-plan-generator", name: "Business Plan Generator", description: "Create comprehensive business plans with AI", category: "Business", icon: "📈", tags: ["business plan", "startup"], popular: false, trending: true, new: true },
+  { id: "meeting-scheduler", name: "Meeting Scheduler", description: "Schedule and manage business meetings", category: "Business", icon: "📅", tags: ["meeting", "schedule"], popular: false, trending: false, new: false },
+  { id: "team-collaboration", name: "Team Collaboration Hub", description: "Collaborate with team members in real-time", category: "Business", icon: "🤝", tags: ["team", "collaboration"], popular: false, trending: false, new: false },
+  // ─── Marketing (12) ───
+  { id: "blog-writer", name: "Blog Writer", description: "Write SEO-optimized blog posts with AI", category: "Marketing", icon: "📝", tags: ["blog", "writing", "seo"], popular: true, trending: true, new: false },
+  { id: "seo-optimizer", name: "SEO Optimizer", description: "Optimize content for search engines", category: "Marketing", icon: "🔍", tags: ["seo", "optimize"], popular: true, trending: false, new: false },
+  { id: "keyword-research", name: "Keyword Research", description: "Find high-ranking keywords for your content", category: "Marketing", icon: "🔑", tags: ["keyword", "research", "seo"], popular: true, trending: false, new: false },
+  { id: "email-campaign-builder", name: "Email Campaign Builder", description: "Create effective email marketing campaigns", category: "Marketing", icon: "📧", tags: ["email", "campaign", "marketing"], popular: false, trending: false, new: false },
+  { id: "landing-page-generator", name: "Landing Page Generator", description: "Build high-converting landing pages", category: "Marketing", icon: "🏗️", tags: ["landing", "page", "conversion"], popular: true, trending: true, new: false },
+  { id: "social-media-planner", name: "Social Media Planner", description: "Plan and schedule social media content", category: "Marketing", icon: "📱", tags: ["social", "plan", "schedule"], popular: false, trending: false, new: false },
+  { id: "caption-generator", name: "Caption Generator", description: "Generate engaging social media captions", category: "Marketing", icon: "💬", tags: ["caption", "social"], popular: false, trending: false, new: false },
+  { id: "ad-copy-generator", name: "Ad Copy Generator", description: "Write compelling ad copy for campaigns", category: "Marketing", icon: "📢", tags: ["ad", "copy", "marketing"], popular: true, trending: false, new: false },
+  { id: "brand-kit", name: "Brand Kit", description: "Create and manage brand assets and guidelines", category: "Marketing", icon: "🎨", tags: ["brand", "assets", "kit"], popular: false, trending: false, new: false },
+  { id: "content-calendar", name: "Content Calendar", description: "Plan and organize content marketing schedule", category: "Marketing", icon: "📅", tags: ["content", "calendar"], popular: false, trending: false, new: false },
+  { id: "influencer-outreach", name: "Influencer Outreach", description: "Manage influencer marketing campaigns", category: "Marketing", icon: "🌟", tags: ["influencer", "outreach"], popular: false, trending: false, new: false },
+  { id: "analytics-dashboard", name: "Marketing Analytics", description: "Track and analyze marketing performance", category: "Marketing", icon: "📊", tags: ["analytics", "marketing", "metrics"], popular: false, trending: false, new: false },
+  // ─── Developer (16) ───
+  { id: "code-generator", name: "Code Generator", description: "Generate code snippets in any language", category: "Developer", icon: "💻", tags: ["code", "generate", "programming"], popular: true, trending: true, new: false },
+  { id: "debugger", name: "Debugger", description: "Debug code with AI-powered analysis", category: "Developer", icon: "🐛", tags: ["debug", "fix", "code"], popular: true, trending: false, new: false },
+  { id: "api-builder", name: "API Builder", description: "Build and test RESTful APIs", category: "Developer", icon: "🔗", tags: ["api", "rest", "backend"], popular: true, trending: true, new: false },
+  { id: "api-documentation", name: "API Documentation", description: "Generate API documentation automatically", category: "Developer", icon: "📚", tags: ["api", "docs", "documentation"], popular: false, trending: false, new: false },
+  { id: "json-formatter", name: "JSON Formatter", description: "Format, validate, and beautify JSON", category: "Developer", icon: "{ }", tags: ["json", "format", "validate"], popular: true, trending: false, new: false },
+  { id: "xml-formatter", name: "XML Formatter", description: "Format and validate XML documents", category: "Developer", icon: "📄", tags: ["xml", "format"], popular: false, trending: false, new: false },
+  { id: "yaml-formatter", name: "YAML Formatter", description: "Format and validate YAML configuration files", category: "Developer", icon: "📝", tags: ["yaml", "format"], popular: false, trending: false, new: false },
+  { id: "regex-tester", name: "Regex Tester", description: "Test and debug regular expressions", category: "Developer", icon: "🔤", tags: ["regex", "test"], popular: true, trending: false, new: false },
+  { id: "sql-formatter", name: "SQL Formatter", description: "Format and beautify SQL queries", category: "Developer", icon: "🗃️", tags: ["sql", "format"], popular: false, trending: false, new: false },
+  { id: "database-explorer", name: "Database Explorer", description: "Browse and manage database schemas", category: "Developer", icon: "💾", tags: ["database", "db", "explore"], popular: false, trending: false, new: false },
+  { id: "git-assistant", name: "Git Assistant", description: "Simplify Git operations and workflows", category: "Developer", icon: "🔀", tags: ["git", "version control"], popular: false, trending: false, new: false },
+  { id: "unit-test-generator", name: "Unit Test Generator", description: "Auto-generate unit tests for your code", category: "Developer", icon: "🧪", tags: ["test", "unit", "qa"], popular: false, trending: true, new: true },
+  { id: "docker-assistant", name: "Docker Assistant", description: "Create and manage Docker containers", category: "Developer", icon: "🐳", tags: ["docker", "container"], popular: false, trending: false, new: false },
+  { id: "ci-cd-builder", name: "CI/CD Builder", description: "Set up CI/CD pipelines easily", category: "Developer", icon: "🔄", tags: ["ci/cd", "devops", "deploy"], popular: false, trending: false, new: false },
+  { id: "code-reviewer", name: "Code Reviewer", description: "AI-powered code review and suggestions", category: "Developer", icon: "👁️", tags: ["review", "code quality"], popular: false, trending: true, new: true },
+  { id: "graphql-builder", name: "GraphQL Builder", description: "Build and query GraphQL APIs", category: "Developer", icon: "🔷", tags: ["graphql", "api", "query"], popular: false, trending: false, new: false },
+  // ─── Productivity (12) ───
+  { id: "notes", name: "Notes", description: "Take and organize notes with rich formatting", category: "Productivity", icon: "📝", tags: ["notes", "organize"], popular: true, trending: false, new: false },
+  { id: "whiteboard", name: "Whiteboard", description: "Collaborate with an infinite digital whiteboard", category: "Productivity", icon: "📋", tags: ["whiteboard", "collaborate"], popular: true, trending: false, new: false },
+  { id: "mind-map", name: "Mind Map", description: "Create visual mind maps for brainstorming", category: "Productivity", icon: "🧠", tags: ["mindmap", "brainstorm"], popular: false, trending: false, new: false },
+  { id: "calendar", name: "Calendar", description: "Manage schedule and events", category: "Productivity", icon: "📅", tags: ["calendar", "schedule"], popular: true, trending: false, new: false },
+  { id: "kanban-board", name: "Kanban Board", description: "Manage tasks with drag-and-drop kanban", category: "Productivity", icon: "📋", tags: ["kanban", "tasks", "agile"], popular: false, trending: false, new: false },
+  { id: "to-do-list", name: "To-do List", description: "Track daily tasks and stay organized", category: "Productivity", icon: "✅", tags: ["todo", "tasks", "list"], popular: true, trending: false, new: false },
+  { id: "team-workspace", name: "Team Workspace", description: "Collaborate with team in shared workspaces", category: "Productivity", icon: "👥", tags: ["team", "workspace", "collaborate"], popular: false, trending: false, new: false },
+  { id: "file-manager", name: "File Manager", description: "Organize and manage all your files", category: "Productivity", icon: "📁", tags: ["files", "manage", "organize"], popular: false, trending: false, new: false },
+  { id: "cloud-storage", name: "Cloud Storage", description: "Store and sync files across devices", category: "Productivity", icon: "☁️", tags: ["cloud", "storage", "sync"], popular: true, trending: false, new: false },
+  { id: "time-tracker", name: "Time Tracker", description: "Track time spent on tasks and projects", category: "Productivity", icon: "⏱️", tags: ["time", "track", "productivity"], popular: false, trending: false, new: false },
+  { id: "habit-tracker", name: "Habit Tracker", description: "Build and track daily habits", category: "Productivity", icon: "🎯", tags: ["habit", "track"], popular: false, trending: false, new: false },
+  { id: "focus-timer", name: "Focus Timer", description: "Pomodoro timer for focused work sessions", category: "Productivity", icon: "🍅", tags: ["focus", "pomodoro", "timer"], popular: false, trending: false, new: false },
+  // ─── Education (10) ───
+  { id: "quiz-generator", name: "Quiz Generator", description: "Create quizzes and assessments with AI", category: "Education", icon: "❓", tags: ["quiz", "test", "assessment"], popular: false, trending: false, new: false },
+  { id: "flashcards", name: "Flashcards", description: "Create digital flashcards for effective study", category: "Education", icon: "🃏", tags: ["flashcards", "study"], popular: false, trending: false, new: false },
+  { id: "assignment-helper", name: "Assignment Helper", description: "Get AI help with assignments and homework", category: "Education", icon: "📚", tags: ["assignment", "homework", "help"], popular: true, trending: false, new: false },
+  { id: "research-assistant", name: "Research Assistant", description: "Conduct academic research with AI", category: "Education", icon: "🔬", tags: ["research", "academic"], popular: false, trending: false, new: false },
+  { id: "citation-generator", name: "Citation Generator", description: "Generate citations in APA, MLA, Chicago", category: "Education", icon: "📖", tags: ["citation", "academic", "reference"], popular: true, trending: false, new: false },
+  { id: "study-planner", name: "Study Planner", description: "Plan study sessions and track progress", category: "Education", icon: "📅", tags: ["study", "plan", "schedule"], popular: false, trending: false, new: false },
+  { id: "course-builder", name: "Course Builder", description: "Create online courses with AI assistance", category: "Education", icon: "🏫", tags: ["course", "teaching", "content"], popular: false, trending: true, new: false },
+  { id: "plagiarism-checker", name: "Plagiarism Checker", description: "Check content for plagiarism and originality", category: "Education", icon: "🔍", tags: ["plagiarism", "check"], popular: true, trending: false, new: false },
+  { id: "math-solver", name: "Math Solver", description: "Solve math problems with step-by-step solutions", category: "Education", icon: "➗", tags: ["math", "solver", "steps"], popular: false, trending: false, new: false },
+  { id: "essay-writer", name: "Essay Writer", description: "Write structured essays with AI assistance", category: "Education", icon: "✍️", tags: ["essay", "writing"], popular: false, trending: false, new: false },
+  // ─── Healthcare (6) ───
+  { id: "medical-report-generator", name: "Medical Report Generator", description: "Create comprehensive medical reports", category: "Healthcare", icon: "📋", tags: ["medical", "report", "healthcare"], popular: false, trending: false, new: false },
+  { id: "prescription-template", name: "Prescription Template", description: "Generate professional prescription templates", category: "Healthcare", icon: "💊", tags: ["prescription", "medical"], popular: false, trending: false, new: false },
+  { id: "health-summary", name: "Health Summary", description: "Summarize patient health records and history", category: "Healthcare", icon: "📄", tags: ["health", "summary", "patient"], popular: false, trending: false, new: false },
+  { id: "lab-report-analyzer", name: "Lab Report Analyzer", description: "Analyze laboratory reports with AI", category: "Healthcare", icon: "🔬", tags: ["lab", "analysis", "medical"], popular: false, trending: false, new: false },
+  { id: "symptom-checker", name: "Symptom Checker", description: "Check symptoms for preliminary assessment", category: "Healthcare", icon: "🩺", tags: ["symptom", "health", "check"], popular: false, trending: false, new: false },
+  { id: "medication-tracker", name: "Medication Tracker", description: "Track medication schedules and dosages", category: "Healthcare", icon: "⏰", tags: ["medication", "tracker", "health"], popular: false, trending: false, new: false },
+  // ─── Legal (8) ───
+  { id: "nda-generator", name: "NDA Generator", description: "Generate non-disclosure agreements instantly", category: "Legal", icon: "🤫", tags: ["nda", "confidential", "legal"], popular: true, trending: false, new: false },
+  { id: "agreement-generator", name: "Agreement Generator", description: "Create legal agreements for any purpose", category: "Legal", icon: "📝", tags: ["agreement", "legal", "contract"], popular: false, trending: false, new: false },
+  { id: "legal-notice", name: "Legal Notice", description: "Draft legal notices and demand letters", category: "Legal", icon: "⚖️", tags: ["legal", "notice", "letter"], popular: false, trending: false, new: false },
+  { id: "privacy-policy", name: "Privacy Policy", description: "Generate privacy policies for websites/apps", category: "Legal", icon: "🔒", tags: ["privacy", "policy", "compliance"], popular: true, trending: false, new: false },
+  { id: "terms-conditions", name: "Terms & Conditions", description: "Create terms and conditions documents", category: "Legal", icon: "📜", tags: ["terms", "conditions", "legal"], popular: true, trending: false, new: false },
+  { id: "compliance-documents", name: "Compliance Documents", description: "Generate compliance and regulatory documents", category: "Legal", icon: "✅", tags: ["compliance", "regulatory"], popular: false, trending: false, new: false },
+  { id: "cease-desist", name: "Cease & Desist", description: "Draft cease and desist letters", category: "Legal", icon: "⛔", tags: ["cease", "desist", "legal"], popular: false, trending: false, new: false },
+  { id: "employment-agreement", name: "Employment Agreement", description: "Generate employment contracts and letters", category: "Legal", icon: "👔", tags: ["employment", "contract", "hr"], popular: false, trending: false, new: false },
+  // ─── Security (8) ───
+  { id: "password-generator", name: "Password Generator", description: "Generate strong secure passwords", category: "Security", icon: "🔑", tags: ["password", "generate", "security"], popular: true, trending: false, new: false },
+  { id: "password-vault", name: "Password Vault", description: "Store and manage passwords securely", category: "Security", icon: "🔒", tags: ["password", "vault", "secure"], popular: true, trending: false, new: false },
+  { id: "file-encryption", name: "File Encryption", description: "Encrypt files with AES security", category: "Security", icon: "🔐", tags: ["encrypt", "security", "file"], popular: false, trending: false, new: false },
+  { id: "digital-signature", name: "Digital Signature", description: "Create and verify digital signatures", category: "Security", icon: "✍️", tags: ["signature", "digital", "verify"], popular: false, trending: false, new: false },
+  { id: "e-signature", name: "E-signature", description: "Send and manage electronic signatures", category: "Security", icon: "📝", tags: ["esign", "signature", "electronic"], popular: true, trending: false, new: false },
+  { id: "secure-file-sharing", name: "Secure File Sharing", description: "Share files with end-to-end encryption", category: "Security", icon: "🔗", tags: ["share", "secure", "file"], popular: false, trending: false, new: false },
+  { id: "two-factor-auth", name: "2FA Manager", description: "Manage two-factor authentication codes", category: "Security", icon: "📱", tags: ["2fa", "authentication", "security"], popular: false, trending: false, new: false },
+  { id: "vpn-generator", name: "VPN Config Generator", description: "Generate VPN configuration files", category: "Security", icon: "🛡️", tags: ["vpn", "config", "security"], popular: false, trending: false, new: false },
+  // ─── File Tools (10) ───
+  { id: "zip-tool", name: "ZIP", description: "Create and extract ZIP archives", category: "File Tools", icon: "🗜️", tags: ["zip", "compress", "archive"], popular: true, trending: false, new: false },
+  { id: "rar-tool", name: "RAR", description: "Create and extract RAR archives", category: "File Tools", icon: "🗜️", tags: ["rar", "compress", "archive"], popular: false, trending: false, new: false },
+  { id: "7z-tool", name: "7Z", description: "Create and extract 7Z archives", category: "File Tools", icon: "🗜️", tags: ["7z", "compress", "archive"], popular: false, trending: false, new: false },
+  { id: "tar-tool", name: "TAR", description: "Create and extract TAR archives", category: "File Tools", icon: "🗜️", tags: ["tar", "compress", "archive"], popular: false, trending: false, new: false },
+  { id: "file-compression", name: "File Compression", description: "Compress files to save disk space", category: "File Tools", icon: "📦", tags: ["compress", "file"], popular: true, trending: false, new: false },
+  { id: "file-conversion", name: "File Conversion", description: "Convert files between different formats", category: "File Tools", icon: "🔄", tags: ["convert", "file", "format"], popular: false, trending: false, new: false },
+  { id: "duplicate-file-finder", name: "Duplicate File Finder", description: "Find and remove duplicate files", category: "File Tools", icon: "🔍", tags: ["duplicate", "find", "clean"], popular: false, trending: false, new: false },
+  { id: "metadata-viewer", name: "Metadata Viewer", description: "View and edit file metadata", category: "File Tools", icon: "ℹ️", tags: ["metadata", "info", "file"], popular: false, trending: false, new: false },
+  { id: "file-splitter", name: "File Splitter", description: "Split large files into smaller parts", category: "File Tools", icon: "✂️", tags: ["split", "file", "large"], popular: false, trending: false, new: false },
+  { id: "file-joiner", name: "File Joiner", description: "Join multiple files into one", category: "File Tools", icon: "🔗", tags: ["join", "merge", "file"], popular: false, trending: false, new: false },
+  // ─── Startup Tools (10) ───
+  { id: "company-registration", name: "Company Registration Assistant", description: "Guide through company registration process", category: "Startup Tools", icon: "🏢", tags: ["startup", "registration", "business"], popular: false, trending: false, new: false },
+  { id: "pitch-deck-builder", name: "Pitch Deck Builder", description: "Create investor-ready pitch decks", category: "Startup Tools", icon: "📊", tags: ["pitch", "deck", "investor"], popular: true, trending: true, new: false },
+  { id: "investor-matcher", name: "Investor Matcher", description: "Find and match with ideal investors", category: "Startup Tools", icon: "🤝", tags: ["investor", "fundraising"], popular: false, trending: false, new: false },
+  { id: "market-research", name: "Market Research Tool", description: "Conduct market research and analysis", category: "Startup Tools", icon: "📈", tags: ["market", "research", "analysis"], popular: false, trending: false, new: false },
+  { id: "mvp-planner", name: "MVP Planner", description: "Plan and build your minimum viable product", category: "Startup Tools", icon: "🚀", tags: ["mvp", "product", "plan"], popular: false, trending: false, new: false },
+  { id: "unit-economics", name: "Unit Economics Calculator", description: "Calculate unit economics for your business", category: "Startup Tools", icon: "🧮", tags: ["economics", "calculator", "startup"], popular: false, trending: false, new: false },
+  { id: "competitor-analysis", name: "Competitor Analysis", description: "Analyze competitors and market positioning", category: "Startup Tools", icon: "🔍", tags: ["competitor", "analysis"], popular: false, trending: false, new: false },
+  { id: "fundraising-planner", name: "Fundraising Planner", description: "Plan fundraising rounds and cap table", category: "Startup Tools", icon: "💰", tags: ["fundraising", "plan", "equity"], popular: false, trending: false, new: false },
+  { id: "startup-metrics", name: "Startup Metric Tracker", description: "Track key startup metrics and KPIs", category: "Startup Tools", icon: "📊", tags: ["metrics", "kpi", "startup"], popular: false, trending: false, new: false },
+  { id: "product-launch", name: "Product Launch Kit", description: "Plan and execute product launches", category: "Startup Tools", icon: "🚀", tags: ["launch", "product", "go-to-market"], popular: false, trending: false, new: false },
+  // ─── E-commerce (10) ───
+  { id: "product-listing", name: "Product Listing Generator", description: "Create optimized product listings", category: "E-commerce", icon: "🛍️", tags: ["product", "listing", "ecommerce"], popular: false, trending: false, new: false },
+  { id: "product-description", name: "Product Description Writer", description: "Write compelling product descriptions", category: "E-commerce", icon: "✍️", tags: ["description", "product", "copy"], popular: true, trending: false, new: false },
+  { id: "store-builder", name: "Online Store Builder", description: "Build your online store with AI", category: "E-commerce", icon: "🏪", tags: ["store", "ecommerce", "shop"], popular: false, trending: false, new: false },
+  { id: "inventory-forecaster", name: "Inventory Forecaster", description: "Predict inventory needs with AI", category: "E-commerce", icon: "📦", tags: ["inventory", "forecast", "ai"], popular: false, trending: false, new: false },
+  { id: "pricing-optimizer", name: "Pricing Optimizer", description: "Optimize product pricing for profit", category: "E-commerce", icon: "🏷️", tags: ["pricing", "optimize", "profit"], popular: false, trending: false, new: false },
+  { id: "review-analyzer", name: "Review Analyzer", description: "Analyze customer reviews for insights", category: "E-commerce", icon: "⭐", tags: ["review", "analyze", "feedback"], popular: false, trending: false, new: false },
+  { id: "shipping-calculator", name: "Shipping Calculator", description: "Calculate shipping costs and options", category: "E-commerce", icon: "🚚", tags: ["shipping", "calculator"], popular: false, trending: false, new: false },
+  { id: "returns-manager", name: "Returns Manager", description: "Manage product returns and refunds", category: "E-commerce", icon: "🔄", tags: ["returns", "refund", "ecommerce"], popular: false, trending: false, new: false },
+  { id: "abandoned-cart", name: "Abandoned Cart Recovery", description: "Recover abandoned shopping carts", category: "E-commerce", icon: "🛒", tags: ["cart", "abandon", "recovery"], popular: false, trending: false, new: false },
+  { id: "supplier-finder", name: "Supplier Finder", description: "Find and evaluate product suppliers", category: "E-commerce", icon: "🔗", tags: ["supplier", "sourcing"], popular: false, trending: false, new: false },
+  // ─── Gaming & Entertainment (8) ───
+  { id: "game-asset-generator", name: "Game Asset Generator", description: "Create game assets with AI", category: "Gaming & Entertainment", icon: "🎮", tags: ["game", "asset", "design"], popular: false, trending: false, new: false },
+  { id: "character-creator", name: "Character Creator", description: "Design game characters and avatars", category: "Gaming & Entertainment", icon: "👤", tags: ["character", "game", "avatar"], popular: false, trending: false, new: false },
+  { id: "level-designer", name: "Level Designer", description: "Design game levels with AI assistance", category: "Gaming & Entertainment", icon: "🏗️", tags: ["level", "game", "design"], popular: false, trending: false, new: false },
+  { id: "story-writer", name: "Story Writer", description: "Write game narratives and dialogues", category: "Gaming & Entertainment", icon: "📖", tags: ["story", "narrative", "game"], popular: false, trending: false, new: false },
+  { id: "sprite-generator", name: "Sprite Generator", description: "Generate 2D sprites for games", category: "Gaming & Entertainment", icon: "🖼️", tags: ["sprite", "2d", "pixel"], popular: false, trending: false, new: false },
+  { id: "sound-effect-generator", name: "Sound Effect Generator", description: "Create game sound effects", category: "Gaming & Entertainment", icon: "🔊", tags: ["sound", "effect", "game"], popular: false, trending: false, new: false },
+  { id: "cutscene-creator", name: "Cutscene Creator", description: "Create animated game cutscenes", category: "Gaming & Entertainment", icon: "🎬", tags: ["cutscene", "animation", "game"], popular: false, trending: false, new: false },
+  { id: "mod-builder", name: "Mod Builder", description: "Build and manage game modifications", category: "Gaming & Entertainment", icon: "🔧", tags: ["mod", "modification", "game"], popular: false, trending: false, new: false },
+  // ─── Web & SEO (10) ───
+  { id: "website-audit", name: "Website Audit Tool", description: "Audit website for SEO and performance", category: "Web & SEO", icon: "🌐", tags: ["audit", "seo", "website"], popular: false, trending: false, new: false },
+  { id: "seo-content-writer", name: "SEO Content Writer", description: "Write content optimized for search engines", category: "Web & SEO", icon: "✍️", tags: ["seo", "content", "writing"], popular: true, trending: true, new: false },
+  { id: "backlink-analyzer", name: "Backlink Analyzer", description: "Analyze and monitor backlink profiles", category: "Web & SEO", icon: "🔗", tags: ["backlink", "seo", "analysis"], popular: false, trending: false, new: false },
+  { id: "sitemap-generator", name: "Sitemap Generator", description: "Generate XML sitemaps for websites", category: "Web & SEO", icon: "🗺️", tags: ["sitemap", "seo", "xml"], popular: false, trending: false, new: false },
+  { id: "robots-txt", name: "Robots.txt Generator", description: "Create robots.txt files for websites", category: "Web & SEO", icon: "🤖", tags: ["robots", "seo", "crawl"], popular: false, trending: false, new: false },
+  { id: "meta-tag-generator", name: "Meta Tag Generator", description: "Generate SEO meta tags and descriptions", category: "Web & SEO", icon: "🏷️", tags: ["meta", "tags", "seo"], popular: false, trending: false, new: false },
+  { id: "page-speed-analyzer", name: "Page Speed Analyzer", description: "Analyze and improve page load speed", category: "Web & SEO", icon: "⚡", tags: ["speed", "performance", "seo"], popular: false, trending: false, new: false },
+  { id: "schema-markup", name: "Schema Markup Generator", description: "Generate structured data with JSON-LD", category: "Web & SEO", icon: "📋", tags: ["schema", "structured data", "seo"], popular: false, trending: false, new: false },
+  { id: "redirect-checker", name: "Redirect Checker", description: "Check and trace website redirects", category: "Web & SEO", icon: "🔄", tags: ["redirect", "check"], popular: false, trending: false, new: false },
+  { id: "keyword-tracker", name: "Keyword Rank Tracker", description: "Track keyword rankings across search engines", category: "Web & SEO", icon: "📈", tags: ["keyword", "rank", "track"], popular: false, trending: false, new: false },
+  // ─── Mobile Apps (8) ───
+  { id: "app-icon-generator", name: "App Icon Generator", description: "Design icons for mobile apps", category: "Mobile Apps", icon: "📱", tags: ["icon", "app", "mobile"], popular: false, trending: false, new: false },
+  { id: "splash-screen-creator", name: "Splash Screen Creator", description: "Create app splash screens", category: "Mobile Apps", icon: "🖼️", tags: ["splash", "screen", "app"], popular: false, trending: false, new: false },
+  { id: "app-store-description", name: "App Store Description Writer", description: "Write ASO-optimized app descriptions", category: "Mobile Apps", icon: "✍️", tags: ["app store", "aso", "description"], popular: false, trending: false, new: false },
+  { id: "screenshot-generator", name: "App Screenshot Generator", description: "Generate app store screenshots", category: "Mobile Apps", icon: "📸", tags: ["screenshot", "app store", "mockup"], popular: false, trending: false, new: false },
+  { id: "push-notification", name: "Push Notification Designer", description: "Design and schedule push notifications", category: "Mobile Apps", icon: "🔔", tags: ["push", "notification", "mobile"], popular: false, trending: false, new: false },
+  { id: "feature-graphic", name: "Feature Graphic Designer", description: "Create Google Play feature graphics", category: "Mobile Apps", icon: "🎨", tags: ["graphic", "play store", "feature"], popular: false, trending: false, new: false },
+  { id: "review-replier", name: "Review Reply Assistant", description: "Generate replies to app reviews", category: "Mobile Apps", icon: "💬", tags: ["review", "reply", "app"], popular: false, trending: false, new: false },
+  { id: "crash-analyzer", name: "Crash Report Analyzer", description: "Analyze mobile app crash reports", category: "Mobile Apps", icon: "💥", tags: ["crash", "analyze", "debug"], popular: false, trending: false, new: false },
+  // ─── Data & Analytics (14) ───
+  { id: "data-visualizer", name: "Data Visualizer", description: "Create beautiful data visualizations and charts", category: "Data & Analytics", icon: "📊", tags: ["visualization", "chart", "data"], popular: true, trending: false, new: false },
+  { id: "csv-analyzer", name: "CSV Analyzer", description: "Analyze CSV files for insights and patterns", category: "Data & Analytics", icon: "📋", tags: ["csv", "analyze", "data"], popular: false, trending: false, new: false },
+  { id: "data-cleaner", name: "Data Cleaner", description: "Clean and prepare datasets for analysis", category: "Data & Analytics", icon: "🧹", tags: ["clean", "data", "prepare"], popular: false, trending: false, new: false },
+  { id: "statistical-analyzer", name: "Statistical Analyzer", description: "Run statistical analysis on datasets", category: "Data & Analytics", icon: "📈", tags: ["statistics", "analysis", "data"], popular: false, trending: false, new: false },
+  { id: "trend-detector", name: "Trend Detector", description: "Detect trends and patterns in data", category: "Data & Analytics", icon: "🔍", tags: ["trend", "detect", "data"], popular: false, trending: false, new: false },
+  { id: "report-generator", name: "Report Generator", description: "Generate analytical reports with visualizations", category: "Data & Analytics", icon: "📑", tags: ["report", "analytics", "visual"], popular: false, trending: false, new: false },
+  { id: "data-exporter", name: "Data Exporter", description: "Export data in various formats", category: "Data & Analytics", icon: "📤", tags: ["export", "data", "format"], popular: false, trending: false, new: false },
+  { id: "data-importer", name: "Data Importer", description: "Import data from various sources", category: "Data & Analytics", icon: "📥", tags: ["import", "data", "source"], popular: false, trending: false, new: false },
+  { id: "anomaly-detector", name: "Anomaly Detector", description: "Detect anomalies and outliers in datasets", category: "Data & Analytics", icon: "⚠️", tags: ["anomaly", "detect", "outlier"], popular: false, trending: false, new: false },
+  { id: "data-mapper", name: "Data Mapper", description: "Map data between different schemas", category: "Data & Analytics", icon: "🗺️", tags: ["map", "data", "schema"], popular: false, trending: false, new: false },
+  { id: "dashboard-builder", name: "Dashboard Builder", description: "Create interactive data dashboards", category: "Data & Analytics", icon: "📊", tags: ["dashboard", "data", "interactive"], popular: false, trending: true, new: true },
+  { id: "api-data-fetcher", name: "API Data Fetcher", description: "Fetch and transform data from APIs", category: "Data & Analytics", icon: "🔗", tags: ["api", "fetch", "data"], popular: false, trending: false, new: false },
+  { id: "data-validator", name: "Data Validator", description: "Validate data quality and completeness", category: "Data & Analytics", icon: "✅", tags: ["validate", "quality", "data"], popular: false, trending: false, new: false },
+  { id: "pivot-table", name: "Pivot Table Builder", description: "Create pivot tables for data analysis", category: "Data & Analytics", icon: "📊", tags: ["pivot", "table", "analysis"], popular: false, trending: false, new: false },
+  // ─── Design Studio (16) ───
+  { id: "ui-wireframe", name: "UI Wireframe Tool", description: "Create wireframes for websites and apps", category: "Design Studio", icon: "📐", tags: ["wireframe", "ui", "design"], popular: true, trending: false, new: false },
+  { id: "color-palette", name: "Color Palette Generator", description: "Generate harmonious color palettes", category: "Design Studio", icon: "🎨", tags: ["color", "palette", "design"], popular: true, trending: false, new: false },
+  { id: "typography-tool", name: "Typography Tool", description: "Find and pair fonts for your design", category: "Design Studio", icon: "🔤", tags: ["font", "typography", "design"], popular: false, trending: false, new: false },
+  { id: "mockup-generator", name: "Mockup Generator", description: "Create product mockups and prototypes", category: "Design Studio", icon: "🖼️", tags: ["mockup", "prototype", "design"], popular: false, trending: false, new: false },
+  { id: "design-system", name: "Design System Builder", description: "Build and maintain design systems", category: "Design Studio", icon: "🏗️", tags: ["design system", "ui", "components"], popular: false, trending: true, new: true },
+  { id: "svg-editor", name: "SVG Editor", description: "Edit and optimize SVG files", category: "Design Studio", icon: "✨", tags: ["svg", "vector", "edit"], popular: false, trending: false, new: false },
+  { id: "gradient-generator", name: "Gradient Generator", description: "Generate beautiful CSS gradients", category: "Design Studio", icon: "🌈", tags: ["gradient", "css", "color"], popular: false, trending: false, new: false },
+  { id: "shadow-generator", name: "Shadow Generator", description: "Create realistic box shadows", category: "Design Studio", icon: "⬛", tags: ["shadow", "css", "effect"], popular: false, trending: false, new: false },
+  { id: "animation-builder", name: "Animation Builder", description: "Create CSS and Lottie animations", category: "Design Studio", icon: "🎬", tags: ["animation", "motion", "css"], popular: false, trending: false, new: false },
+  { id: "grid-generator", name: "Grid Generator", description: "Generate CSS grid layouts", category: "Design Studio", icon: "🔲", tags: ["grid", "layout", "css"], popular: false, trending: false, new: false },
+  { id: "icon-set", name: "Icon Set Designer", description: "Design consistent icon sets", category: "Design Studio", icon: "🔘", tags: ["icon", "set", "design"], popular: false, trending: false, new: false },
+  { id: "brand-identity", name: "Brand Identity Builder", description: "Create complete brand identity systems", category: "Design Studio", icon: "🏷️", tags: ["brand", "identity", "logo"], popular: false, trending: false, new: false },
+  { id: "social-template", name: "Social Media Template", description: "Design social media templates", category: "Design Studio", icon: "📱", tags: ["template", "social", "design"], popular: false, trending: false, new: false },
+  { id: "email-template", name: "Email Template Designer", description: "Design HTML email templates", category: "Design Studio", icon: "✉️", tags: ["email", "template", "html"], popular: false, trending: false, new: false },
+  { id: "presentation-designer", name: "Presentation Designer", description: "Design stunning slide presentations", category: "Design Studio", icon: "📽️", tags: ["presentation", "slides", "design"], popular: false, trending: false, new: false },
+  { id: "prototyping-tool", name: "Prototyping Tool", description: "Create interactive app prototypes", category: "Design Studio", icon: "🔗", tags: ["prototype", "interactive", "ux"], popular: false, trending: false, new: false },
+  // ─── Email & Communication (8) ───
+  { id: "email-writer", name: "Email Writer", description: "Write professional emails with AI", category: "Email & Communication", icon: "✉️", tags: ["email", "writing", "ai"], popular: true, trending: false, new: false },
+  { id: "newsletter-builder", name: "Newsletter Builder", description: "Create and send newsletters", category: "Email & Communication", icon: "📰", tags: ["newsletter", "email", "campaign"], popular: false, trending: false, new: false },
+  { id: "auto-responder", name: "Auto-responder Setup", description: "Set up automated email responses", category: "Email & Communication", icon: "🤖", tags: ["auto", "respond", "email"], popular: false, trending: false, new: false },
+  { id: "email-verifier", name: "Email Verifier", description: "Verify email addresses for validity", category: "Email & Communication", icon: "✅", tags: ["verify", "email", "validate"], popular: false, trending: false, new: false },
+  { id: "cold-email", name: "Cold Email Writer", description: "Write effective cold outreach emails", category: "Email & Communication", icon: "❄️", tags: ["cold", "outreach", "email"], popular: false, trending: false, new: false },
+  { id: "email-signature", name: "Email Signature Generator", description: "Create professional email signatures", category: "Email & Communication", icon: "✍️", tags: ["signature", "email", "footer"], popular: false, trending: false, new: false },
+  { id: "chatbot-builder", name: "Chatbot Builder", description: "Build AI chatbots for customer service", category: "Email & Communication", icon: "💬", tags: ["chatbot", "customer", "support"], popular: false, trending: true, new: true },
+  { id: "survey-creator", name: "Survey Creator", description: "Create and send customer surveys", category: "Email & Communication", icon: "📋", tags: ["survey", "feedback", "customer"], popular: false, trending: false, new: false },
+  // ─── Travel & Localization (8) ───
+  { id: "travel-planner", name: "Travel Planner", description: "Plan complete trips with AI itinerary", category: "Travel & Localization", icon: "✈️", tags: ["travel", "plan", "trip"], popular: true, trending: false, new: false },
+  { id: "localization-tool", name: "Localization Tool", description: "Localize content for any region", category: "Travel & Localization", icon: "🌍", tags: ["localize", "translate", "region"], popular: false, trending: false, new: false },
+  { id: "currency-converter", name: "Currency Converter", description: "Convert currencies with live rates", category: "Travel & Localization", icon: "💱", tags: ["currency", "convert", "exchange"], popular: true, trending: false, new: false },
+  { id: "timezone-converter", name: "Timezone Converter", description: "Convert time across time zones", category: "Travel & Localization", icon: "🕐", tags: ["timezone", "convert", "time"], popular: false, trending: false, new: false },
+  { id: "accommodation-finder", name: "Accommodation Finder", description: "Find hotels and accommodation", category: "Travel & Localization", icon: "🏨", tags: ["hotel", "accommodation", "travel"], popular: false, trending: false, new: false },
+  { id: "phrase-translator", name: "Phrase Translator", description: "Translate common travel phrases", category: "Travel & Localization", icon: "💬", tags: ["translate", "phrase", "travel"], popular: false, trending: false, new: false },
+  { id: "visa-checker", name: "Visa Requirements Checker", description: "Check visa requirements for travel", category: "Travel & Localization", icon: "🛂", tags: ["visa", "travel", "requirements"], popular: false, trending: false, new: false },
+  { id: "packing-list", name: "Packing List Generator", description: "Generate smart packing lists for trips", category: "Travel & Localization", icon: "🧳", tags: ["packing", "list", "travel"], popular: false, trending: false, new: false },
+];
+
+// Categories data matching the frontend's Category interface
+const categoriesData = [
+  { id: "pdf-suite", name: "PDF Suite", icon: "📄", color: "#ef4444", gradient: "from-red-500 to-orange-500" },
+  { id: "document-suite", name: "Document Suite", icon: "📝", color: "#f59e0b", gradient: "from-amber-500 to-yellow-500" },
+  { id: "ai-assistant", name: "AI Assistant", icon: "🤖", color: "#8b5cf6", gradient: "from-violet-500 to-purple-500" },
+  { id: "image-studio", name: "Image Studio", icon: "🖼️", color: "#06b6d4", gradient: "from-cyan-500 to-teal-500" },
+  { id: "video-studio", name: "Video Studio", icon: "🎥", color: "#ec4899", gradient: "from-pink-500 to-rose-500" },
+  { id: "audio-studio", name: "Audio Studio", icon: "🎵", color: "#14b8a6", gradient: "from-emerald-500 to-teal-500" },
+  { id: "business", name: "Business", icon: "💼", color: "#3b82f6", gradient: "from-blue-500 to-indigo-500" },
+  { id: "marketing", name: "Marketing", icon: "📈", color: "#f97316", gradient: "from-orange-500 to-red-500" },
+  { id: "developer", name: "Developer", icon: "👨‍💻", color: "#10b981", gradient: "from-emerald-500 to-green-500" },
+  { id: "productivity", name: "Productivity", icon: "📊", color: "#6366f1", gradient: "from-indigo-500 to-violet-500" },
+  { id: "education", name: "Education", icon: "🎓", color: "#a855f7", gradient: "from-purple-500 to-fuchsia-500" },
+  { id: "healthcare", name: "Healthcare", icon: "🏥", color: "#22c55e", gradient: "from-green-500 to-emerald-500" },
+  { id: "legal", name: "Legal", icon: "⚖", color: "#78716c", gradient: "from-stone-500 to-neutral-500" },
+  { id: "security", name: "Security", icon: "🔐", color: "#dc2626", gradient: "from-red-500 to-rose-500" },
+  { id: "file-tools", name: "File Tools", icon: "📂", color: "#d97706", gradient: "from-amber-500 to-yellow-500" },
+  { id: "startup", name: "Startup Tools", icon: "🚀", color: "#7c3aed", gradient: "from-violet-500 to-indigo-500" },
+  { id: "ecommerce", name: "E-commerce", icon: "🛒", color: "#059669", gradient: "from-emerald-500 to-green-600" },
+  { id: "gaming", name: "Gaming & Entertainment", icon: "🎮", color: "#e11d48", gradient: "from-rose-500 to-pink-600" },
+  { id: "web-seo", name: "Web & SEO", icon: "🌐", color: "#0891b2", gradient: "from-cyan-600 to-blue-500" },
+  { id: "mobile", name: "Mobile Apps", icon: "📱", color: "#6d28d9", gradient: "from-violet-600 to-purple-500" },
+  { id: "data-analytics", name: "Data & Analytics", icon: "📊", color: "#0f766e", gradient: "from-teal-600 to-cyan-500" },
+  { id: "design-studio", name: "Design Studio", icon: "🎨", color: "#db2777", gradient: "from-pink-600 to-rose-500" },
+  { id: "email-communication", name: "Email & Communication", icon: "✉️", color: "#2563eb", gradient: "from-blue-600 to-indigo-500" },
+  { id: "travel-localization", name: "Travel & Localization", icon: "🌍", color: "#ca8a04", gradient: "from-yellow-600 to-amber-500" },
+];
+
+async function seed() {
+  console.log('Seeding categories...');
+  for (let i = 0; i < categoriesData.length; i++) {
+    const cat = categoriesData[i];
+    await db.query(
+      `INSERT INTO categories (id, name, icon, color, gradient, sortOrder)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE name=VALUES(name), icon=VALUES(icon), color=VALUES(color), gradient=VALUES(gradient), sortOrder=VALUES(sortOrder)`,
+      [cat.id, cat.name, cat.icon, cat.color, cat.gradient, i]
+    );
+  }
+  console.log(`  ✓ ${categoriesData.length} categories seeded.`);
+
+  console.log('Seeding services...');
+  let count = 0;
+  for (let i = 0; i < servicesData.length; i++) {
+    const s = servicesData[i];
+    const serviceSlug = s.id;
+    const serviceRoute = `/dashboard/tools/${s.id}`;
+    // Find categoryId from categoriesData
+    const cat = categoriesData.find(c => c.name === s.category);
+    const categoryId = cat ? cat.id : null;
+
+    await db.query(
+      `INSERT INTO services (id, name, slug, shortDescription, description, category, categoryId, icon, route, status, isActive, isFeatured, tags, popular, trending, new, sortOrder)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', TRUE, FALSE, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         name=VALUES(name), slug=VALUES(slug), shortDescription=VALUES(shortDescription),
+         description=VALUES(description), category=VALUES(category), categoryId=VALUES(categoryId),
+         icon=VALUES(icon), route=VALUES(route), status=VALUES(status),
+         isActive=VALUES(isActive), isFeatured=VALUES(isFeatured),
+         tags=VALUES(tags), popular=VALUES(popular),
+         trending=VALUES(trending), new=VALUES(new), sortOrder=VALUES(sortOrder)`,
+      [
+        s.id, s.name, serviceSlug,
+        s.description.substring(0, 200), s.description,
+        s.category, categoryId, s.icon, serviceRoute,
+        JSON.stringify(s.tags),
+        s.popular ? 1 : 0, s.trending ? 1 : 0, s.new ? 1 : 0, i
+      ]
+    );
+    count++;
+  }
+  console.log(`  ✓ ${count} services seeded.`);
+
+  console.log('Seeding complete.');
+  process.exit(0);
+}
+
+seed().catch((err) => {
+  console.error('Seed failed:', err);
+  process.exit(1);
+});
+
