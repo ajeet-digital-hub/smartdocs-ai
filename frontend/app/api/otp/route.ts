@@ -17,24 +17,21 @@ import {
   normalizePhoneNumber,
 } from "../utils"
 
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY
-const EMAIL_FROM = process.env.EMAIL_FROM
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN
-const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID
-
 function badRequest(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: message }, { status })
 }
 
 async function sendOtpEmail(email: string, code: string) {
-  if (!SENDGRID_API_KEY || !EMAIL_FROM) {
+  const apiKey = process.env.SENDGRID_API_KEY
+  const fromEmail = process.env.EMAIL_FROM
+
+  if (!apiKey || !fromEmail) {
     throw new Error("Email service is not configured. Set SENDGRID_API_KEY and EMAIL_FROM in environment variables.")
   }
 
   const payload = {
     personalizations: [{ to: [{ email }] }],
-    from: { email: EMAIL_FROM },
+    from: { email: fromEmail },
     subject: "Your SmartDocs AI verification code",
     content: [
       {
@@ -47,7 +44,7 @@ async function sendOtpEmail(email: string, code: string) {
   const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${SENDGRID_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
@@ -60,19 +57,23 @@ async function sendOtpEmail(email: string, code: string) {
 }
 
 async function sendPhoneOtp(phone: string, channel: "sms" | "whatsapp") {
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_VERIFY_SERVICE_SID) {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID
+  const authToken = process.env.TWILIO_AUTH_TOKEN
+  const serviceSid = process.env.TWILIO_VERIFY_SERVICE_SID
+
+  if (!accountSid || !authToken || !serviceSid) {
     throw new Error(
       "SMS/WhatsApp provider is not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_VERIFY_SERVICE_SID.",
     )
   }
 
-  const authHeader = `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString("base64")}`
+  const authHeader = `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`
   const body = new URLSearchParams()
   body.append("To", phone)
   body.append("Channel", channel)
 
   const response = await fetch(
-    `https://verify.twilio.com/v2/Services/${TWILIO_VERIFY_SERVICE_SID}/Verifications`,
+    `https://verify.twilio.com/v2/Services/${serviceSid}/Verifications`,
     {
       method: "POST",
       headers: {
@@ -209,13 +210,31 @@ export async function POST(request: Request) {
   }
   otpStore.set(contactKey, entry)
 
-  try {
-    await sendOtpEmail(email, code)
-  } catch (error) {
-    otpStore.delete(contactKey)
-    const message = error instanceof Error ? error.message : "Failed to send OTP email."
-    return badRequest(message, 500)
+  // try {
+  //   await sendOtpEmail(email, code)
+  // } catch (error) {
+  //   otpStore.delete(contactKey)
+  //   const message = error instanceof Error ? error.message : "Failed to send OTP email."
+  //   return badRequest(message, 500)
+  // }
+  
+  // HACK: Temporarily bypass email sending for testing
+  console.log(`OTP for ${email}: ${code}`);
+
+  const responsePayload: {
+    ok: true
+    cooldown: number
+    expiresIn: number
+    dev?: { code: string }
+  } = {
+    ok: true,
+    cooldown: RESEND_COOLDOWN / 1000,
+    expiresIn: OTP_TTL / 1000,
   }
 
-  return NextResponse.json({ ok: true, cooldown: RESEND_COOLDOWN / 1000, expiresIn: OTP_TTL / 1000 })
+  if (process.env.NODE_ENV === "development") {
+    responsePayload.dev = { code }
+  }
+
+  return NextResponse.json(responsePayload)
 }
