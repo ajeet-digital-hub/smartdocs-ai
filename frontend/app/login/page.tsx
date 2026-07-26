@@ -57,18 +57,19 @@ export default function LoginPage() {
     if (!isValidEmail(email)) { setError("Enter a valid email address."); return }
     if (!password) { setError("Enter your password."); return }
     setLoading(true)
-    try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, type: "password" }),
-      })
-      const result = await response.json()
-      if (!response.ok || !result.ok) throw new Error(result.error || "Unable to sign in.")
+
+    const result = await signIn("credentials", {
+      redirect: false,
+      email: email,
+      password: password,
+    })
+
+    setLoading(false)
+
+    if (result?.error) {
+      setError(result.error)
+    } else if (result?.ok) {
       router.push("/dashboard")
-    } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : "Unable to sign in.")
-      setLoading(false)
     }
   }
 

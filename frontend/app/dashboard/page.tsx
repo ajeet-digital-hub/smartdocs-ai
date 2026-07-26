@@ -1,46 +1,30 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import DashboardLayout from "./components/DashboardLayout"
+import { useSession } from "next-auth/react";
+import { WelcomeModal } from "@/components/WelcomeModal";
 
-export default function Dashboard() {
-  const [user, setUser] = useState<{ name: string; email: string; avatar?: string } | null>(null)
-  const [loading, setLoading] = useState(true)
+export default function DashboardPage() {
+  const { data: session, status } = useSession();
 
-  useEffect(() => {
-    if (typeof window === "undefined") return
+  if (status === "loading") {
+    return <div style={{ color: "white", textAlign: "center", paddingTop: "50px" }}>Loading...</div>;
+  }
 
-    const u = localStorage.getItem("sd_user")
+  if (status === "unauthenticated" || !session?.user) {
+    // This should be handled by middleware, but as a fallback:
+    if (typeof window !== "undefined") window.location.href = "/login";
+    return null;
+  }
 
-    if (!u) {
-      setUser({
-        name: "Guest",
-        email: "guest@smartdocs.ai",
-      })
-      setLoading(false)
-      return
-    }
-
-    setUser({
-      name: u.includes("@") ? u.split("@")[0] : u,
-      email: u,
-    })
-    setLoading(false)
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-        <div className="rounded-3xl bg-white px-6 py-4 shadow-lg ring-1 ring-black/5 dark:bg-slate-900">
-          Loading dashboard...
+  return (
+    <>
+      {session.user.hasSeenWelcome === false && <WelcomeModal />}
+      <div style={{ padding: "40px 24px", maxWidth: "1280px", margin: "0 auto" }}>
+        <div style={{ background: "#FFFDF7", borderRadius: "20px", padding: "44px 48px 40px" }}>
+          <h1 style={{ fontSize: "29px", fontWeight: 700, color: "#241F1B", margin: "0 0 8px" }}>Welcome, {session.user.fullName || 'User'}!</h1>
+          <p style={{ fontSize: "15px", color: "#6E6459", marginBottom: "28px" }}>This is your dashboard.</p>
         </div>
       </div>
-    )
-  }
-
-  if (!user) {
-    return null
-  }
-
-  return <DashboardLayout user={user} />
+    </>
+  );
 }
