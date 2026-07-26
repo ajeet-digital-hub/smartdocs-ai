@@ -337,6 +337,8 @@ export const services: Service[] = [
   { id: "phrase-translator", name: "Phrase Translator", description: "Translate common travel phrases", category: "Travel & Localization", icon: "💬", tags: ["translate", "phrase", "travel"], popular: false, trending: false, new: false },
   { id: "visa-checker", name: "Visa Requirements Checker", description: "Check visa requirements for travel", category: "Travel & Localization", icon: "🛂", tags: ["visa", "travel", "requirements"], popular: false, trending: false, new: false },
   { id: "packing-list", name: "Packing List Generator", description: "Generate smart packing lists for trips", category: "Travel & Localization", icon: "🧳", tags: ["packing", "list", "travel"], popular: false, trending: false, new: false },
+  // ─── Family Guardian ───
+  { id: "family-guardian", name: "Family Guardian", description: "Parental control dashboard to manage screen time, block apps/websites, and monitor child activity", category: "Parental Controls", icon: "🛡️", tags: ["parental", "control", "children", "screen time"], popular: true, trending: true, new: true },
 ];
 
 export const getServicesByCategory = (category: string): Service[] => {

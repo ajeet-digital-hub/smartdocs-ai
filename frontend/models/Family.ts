@@ -1,33 +1,29 @@
-import mongoose, { Schema, Document, Model, models } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IFamily extends Document {
   parentId: mongoose.Types.ObjectId;
   name: string;
+  pairingCode?: string;
+  pairingCodeExpires?: Date;
   createdAt: Date;
-  members: {
-    userId: mongoose.Types.ObjectId;
-    role: "parent" | "child";
-    childId?: mongoose.Types.ObjectId;
-  }[];
+  updatedAt: Date;
 }
 
 const FamilySchema = new Schema<IFamily>(
   {
-    parentId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
-    name: { type: String, required: true, default: "My Family" },
-    members: [
-      {
-        userId: { type: Schema.Types.ObjectId, ref: "User" },
-        role: { type: String, enum: ["parent", "child"] },
-        childId: { type: Schema.Types.ObjectId, ref: "Child" },
-      },
-    ],
+    parentId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true, unique: true },
+    name: { type: String, required: true, default: "My Family", trim: true },
+    pairingCode: { type: String },
+    pairingCodeExpires: { type: Date },
   },
-  { timestamps: { createdAt: true, updatedAt: false } }
+  { timestamps: true }
 );
 
-const Family: Model<IFamily> =
-  (models.Family as Model<IFamily>) || mongoose.model<IFamily>("Family", FamilySchema);
+FamilySchema.index({ pairingCode: 1 });
 
-export default Family;
+const FamilyModel: Model<IFamily> =
+  (mongoose.models.Family as Model<IFamily>) ||
+  mongoose.model<IFamily>("Family", FamilySchema);
+
+export default FamilyModel;
 

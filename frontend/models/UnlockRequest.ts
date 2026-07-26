@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Model, models } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IUnlockRequest extends Document {
   childId: mongoose.Types.ObjectId;
@@ -10,9 +10,10 @@ export interface IUnlockRequest extends Document {
   reason: string;
   type: "normal" | "emergency";
   status: "pending" | "approved_once" | "approved_10min" | "approved_30min" | "denied";
-  deniedReason?: string;
   approvedUntil?: Date;
+  deniedReason?: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const UnlockRequestSchema = new Schema<IUnlockRequest>(
@@ -30,17 +31,17 @@ const UnlockRequestSchema = new Schema<IUnlockRequest>(
       enum: ["pending", "approved_once", "approved_10min", "approved_30min", "denied"],
       default: "pending",
     },
-    deniedReason: String,
-    approvedUntil: Date,
+    approvedUntil: { type: Date },
+    deniedReason: { type: String },
   },
-  { timestamps: { createdAt: true, updatedAt: false } }
+  { timestamps: true }
 );
 
 UnlockRequestSchema.index({ familyId: 1, status: 1 });
-UnlockRequestSchema.index({ childId: 1, status: 1 });
+UnlockRequestSchema.index({ childId: 1, createdAt: -1 });
 
 const UnlockRequest: Model<IUnlockRequest> =
-  (models.UnlockRequest as Model<IUnlockRequest>) ||
+  (mongoose.models.UnlockRequest as Model<IUnlockRequest>) ||
   mongoose.model<IUnlockRequest>("UnlockRequest", UnlockRequestSchema);
 
 export default UnlockRequest;

@@ -35,6 +35,7 @@ const categoryColors: Record<string, string> = {
   Healthcare: "text-green-600 bg-green-50 dark:bg-green-950/40 dark:text-green-400",
   Legal: "text-stone-600 bg-stone-50 dark:bg-stone-950/40 dark:text-stone-400",
   Security: "text-red-600 bg-red-50 dark:bg-red-950/40 dark:text-red-400",
+  "Parental Controls": "text-purple-600 bg-purple-50 dark:bg-purple-950/40 dark:text-cyan-400",
 };
 
 const defaultCardStyle =

@@ -21,7 +21,14 @@ export type ActivityAction =
   | "streak_updated"
   | "emergency_access_granted"
   | "emergency_access_denied"
-  | "settings_updated";
+  | "settings_updated"
+  | "device_pair_initiated"
+  | "device_paired"
+  | "device_locked"
+  | "device_unlocked"
+  | "app_locked"
+  | "app_unlocked"
+  | "app_limit_changed";
 
 export interface IActivityLog extends Document {
   familyId: mongoose.Types.ObjectId;
@@ -49,6 +56,8 @@ const ActivityLogSchema = new Schema<IActivityLog>(
         "study_goal_updated", "streak_updated",
         "emergency_access_granted", "emergency_access_denied",
         "settings_updated",
+        "device_pair_initiated", "device_paired", "device_locked", "device_unlocked",
+        "app_locked", "app_unlocked", "app_limit_changed",
       ],
       required: true,
     },
