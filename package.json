@@ -20,7 +20,9 @@
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
+    "bcrypt": "^6.0.0",
     "mongodb": "^7.5.0",
+    "multer": "^2.2.0",
     "twilio": "^6.0.2"
   }
 }
