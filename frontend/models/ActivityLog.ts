@@ -24,11 +24,18 @@ export type ActivityAction =
   | "settings_updated"
   | "device_pair_initiated"
   | "device_paired"
+  | "device_revoked"
+  | "device_offline"
+  | "device_heartbeat"
   | "device_locked"
   | "device_unlocked"
   | "app_locked"
   | "app_unlocked"
-  | "app_limit_changed";
+  | "app_limit_changed"
+  | "app_detected"
+  | "app_policy_updated"
+  | "temporary_unlock_granted"
+  | "temporary_unlock_expired";
 
 export interface IActivityLog extends Document {
   familyId: mongoose.Types.ObjectId;
@@ -56,8 +63,10 @@ const ActivityLogSchema = new Schema<IActivityLog>(
         "study_goal_updated", "streak_updated",
         "emergency_access_granted", "emergency_access_denied",
         "settings_updated",
-        "device_pair_initiated", "device_paired", "device_locked", "device_unlocked",
-        "app_locked", "app_unlocked", "app_limit_changed",
+        "device_pair_initiated", "device_paired", "device_revoked", "device_offline",
+        "device_heartbeat", "device_locked", "device_unlocked",
+        "app_locked", "app_unlocked", "app_limit_changed", "app_detected", "app_policy_updated",
+        "temporary_unlock_granted", "temporary_unlock_expired",
       ],
       required: true,
     },

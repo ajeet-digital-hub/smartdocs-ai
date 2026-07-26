@@ -5,62 +5,41 @@ import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import PairDeviceModal from "../components/PairDeviceModal";
+import { APPLICATION_CATALOG, CATEGORY_COLORS, CATEGORY_LABELS, AppCatalogEntry } from "@/data/application-catalog";
 
-// ─── Common App Definitions ───
-const COMMON_APPS = [
-  { id: "youtube", name: "YouTube", icon: "▶️", category: "entertainment", domains: ["youtube.com", "youtu.be"] },
-  { id: "instagram", name: "Instagram", icon: "📸", category: "social", domains: ["instagram.com"] },
-  { id: "facebook", name: "Facebook", icon: "👤", category: "social", domains: ["facebook.com", "fb.com"] },
-  { id: "whatsapp", name: "WhatsApp", icon: "💬", category: "social", domains: ["whatsapp.com"] },
-  { id: "tiktok", name: "TikTok", icon: "🎵", category: "social", domains: ["tiktok.com"] },
-  { id: "games", name: "Games", icon: "🎮", category: "gaming", domains: ["roblox.com", "minecraft.net", "epicgames.com", "steampowered.com", "fortnite.com"] },
-  { id: "snapchat", name: "Snapchat", icon: "👻", category: "social", domains: ["snapchat.com"] },
-  { id: "netflix", name: "Netflix", icon: "🎬", category: "entertainment", domains: ["netflix.com"] },
-  { id: "discord", name: "Discord", icon: "💬", category: "social", domains: ["discord.com", "discord.gg"] },
-  { id: "twitter", name: "X (Twitter)", icon: "🐦", category: "social", domains: ["x.com", "twitter.com"] },
-  { id: "reddit", name: "Reddit", icon: "👽", category: "social", domains: ["reddit.com"] },
-  { id: "twitch", name: "Twitch", icon: "📺", category: "gaming", domains: ["twitch.tv"] },
-  { id: "pinterest", name: "Pinterest", icon: "📌", category: "social", domains: ["pinterest.com"] },
-  { id: "telegram", name: "Telegram", icon: "✈️", category: "social", domains: ["telegram.org"] },
-  { id: "spotify", name: "Spotify", icon: "🎵", category: "entertainment", domains: ["spotify.com"] },
-  { id: "custom", name: "Custom App", icon: "➕", category: "custom", domains: [] },
-];
-
-interface AppPolicy {
+interface AppPolicyView {
   _id?: string;
   appId: string;
   name: string;
   icon: string;
   category: string;
+  appPackage: string;
   domains: string[];
   isBlocked: boolean;
   isAllowed: boolean;
   scheduleEnabled: boolean;
   scheduleBlocks: { startTime: string; endTime: string; daysOfWeek: string[] }[];
   dailyLimitMinutes: number | null;
+  /** Whether the device has reported this app as installed */
+  isInstalled: boolean;
+  /** Whether we have a connected device to report status */
+  deviceConnected: boolean;
+}
+
+interface Device {
+  _id: string;
+  deviceName: string;
+  platform: string;
+  status: string;
+  lastSeen: string;
+  installedApps: { packageName: string; appName: string; isDetected: boolean }[];
 }
 
 interface Child {
   _id: string;
   name: string;
   age: number;
-  devices: { name: string; type: string; status: string }[];
 }
-
-const CATEGORY_COLORS: Record<string, string> = {
-  social: "text-red-400 bg-red-500/10",
-  gaming: "text-orange-400 bg-orange-500/10",
-  entertainment: "text-yellow-400 bg-yellow-500/10",
-  educational: "text-green-400 bg-green-500/10",
-  custom: "text-blue-400 bg-blue-500/10",
-};
-
-const ACTION_BUTTONS = [
-  { key: "block", label: "Block", color: "bg-red-500/20 text-red-400 hover:bg-red-500/30" },
-  { key: "allow", label: "Allow", color: "bg-green-500/20 text-green-400 hover:bg-green-500/30" },
-  { key: "schedule", label: "Schedule", color: "bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30" },
-  { key: "limit", label: "Time Limit", color: "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30" },
-];
 
 export default function BlockingPage() {
   const { data: session, status } = useSession();
@@ -70,9 +49,10 @@ export default function BlockingPage() {
 
   const [loading, setLoading] = useState(true);
   const [children, setChildren] = useState<Child[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
   const [selectedChildId, setSelectedChildId] = useState(childIdParam || "");
   const [error, setError] = useState<string | null>(null);
-  const [appPolicies, setAppPolicies] = useState<Record<string, AppPolicy>>({});
+  const [appPolicies, setAppPolicies] = useState<Record<string, AppPolicyView>>({});
   const [showPairModal, setShowPairModal] = useState(false);
   const [showCustomAppForm, setShowCustomAppForm] = useState(false);
   const [customAppName, setCustomAppName] = useState("");
@@ -89,7 +69,7 @@ export default function BlockingPage() {
 
   useEffect(() => {
     if (selectedChildId) {
-      fetchPolicies();
+      fetchData();
     } else {
       setAppPolicies({});
     }
@@ -105,10 +85,18 @@ export default function BlockingPage() {
     }
   }
 
-  async function fetchPolicies() {
+  async function fetchData() {
     try {
       setLoading(true);
-      // Seed defaults
+
+      // Fetch devices for this child to get installed app info
+      const devicesRes = await fetch(`/api/family-guardian/devices?childId=${selectedChildId}`);
+      const devicesData = await devicesRes.json();
+      if (devicesData.ok) {
+        setDevices(devicesData.devices);
+      }
+
+      // Fetch website policies (existing)
       await fetch("/api/family/website-policies", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -117,50 +105,76 @@ export default function BlockingPage() {
 
       const res = await fetch("/api/family/website-policies");
       const data = await res.json();
+
       if (data.ok) {
         const childPolicies = data.policies.filter((p: any) => {
           const cid = typeof p.childId === "object" ? p.childId._id : p.childId;
           return cid === selectedChildId;
         });
 
-        // Build app policies map from existing data
-        const policyMap: Record<string, AppPolicy> = {};
-        
-        // Initialize from common apps
-        for (const app of COMMON_APPS) {
-          const existing = childPolicies.find((p: any) => 
-            p.name.toLowerCase() === app.name.toLowerCase() || app.domains.includes(p.domain)
+        // Build app policies from catalog
+        const policyMap: Record<string, AppPolicyView> = {};
+
+        // Determine if any device is connected and online
+        const hasOnlineDevice = devicesData.devices?.some((d: Device) => d.status === "online") ?? false;
+
+        // Collect all installed package names from devices
+        const installedPackages = new Set<string>();
+        if (devicesData.devices) {
+          for (const device of devicesData.devices) {
+            if (device.installedApps) {
+              for (const app of device.installedApps) {
+                if (app.isDetected) {
+                  installedPackages.add(app.packageName);
+                }
+              }
+            }
+          }
+        }
+
+        // Initialize from app catalog
+        for (const app of APPLICATION_CATALOG) {
+          // Check if any connected device reports this app as installed
+          const isInstalled = app.packageNames.some((pkg) => installedPackages.has(pkg));
+
+          // Find existing website policy for this app's domains
+          const existing = childPolicies.find((p: any) =>
+            p.name.toLowerCase() === app.name.toLowerCase() ||
+            app.domains.includes(p.domain)
           );
-          
-          policyMap[app.id] = {
-            appId: app.id,
+
+          policyMap[app.appId] = {
+            appId: app.appId,
             name: app.name,
             icon: app.icon,
             category: app.category,
+            appPackage: app.packageNames[0] || "",
             domains: app.domains,
-            isBlocked: existing ? existing.isBlocked : true,
-            isAllowed: existing ? !existing.isBlocked : false,
+            isBlocked: existing ? existing.isBlocked : app.defaultBlocked,
+            isAllowed: existing ? !existing.isBlocked : !app.defaultBlocked,
             scheduleEnabled: existing ? existing.scheduleBlocks?.length > 0 : false,
             scheduleBlocks: existing?.scheduleBlocks || [],
             dailyLimitMinutes: existing?.dailyLimitMinutes || null,
             _id: existing?._id,
+            isInstalled,
+            deviceConnected: hasOnlineDevice,
           };
         }
+
         setAppPolicies(policyMap);
       }
     } catch {
-      setError("Failed to load policies");
+      setError("Failed to load data");
     } finally {
       setLoading(false);
     }
   }
 
-  async function updateAppPolicy(appId: string, updates: Partial<AppPolicy>) {
-    const app = COMMON_APPS.find((a) => a.id === appId);
+  async function updateAppPolicy(appId: string, updates: Partial<AppPolicyView>) {
+    const app = APPLICATION_CATALOG.find((a) => a.appId === appId);
     if (!app) return;
 
     try {
-      // Find existing policy or create one
       const existingPolicy = appPolicies[appId];
       const domain = app.domains[0] || customAppDomain;
 
@@ -181,7 +195,7 @@ export default function BlockingPage() {
             domain,
             category: app.category,
             icon: app.icon,
-            isBlocked: updates.isBlocked ?? true,
+            isBlocked: updates.isBlocked ?? app.defaultBlocked,
             dailyLimitMinutes: updates.dailyLimitMinutes || null,
             scheduleBlocks: updates.scheduleBlocks || [],
           }),
@@ -195,7 +209,7 @@ export default function BlockingPage() {
           [appId]: {
             ...prev[appId],
             ...updates,
-            _id: data.policy?._id || data.policy?._id || prev[appId]?._id,
+            _id: data.policy?._id || prev[appId]?._id,
           },
         }));
       }
@@ -206,6 +220,7 @@ export default function BlockingPage() {
 
   async function toggleBlock(appId: string) {
     const current = appPolicies[appId];
+    if (!current) return;
     const newBlocked = !current.isBlocked;
     await updateAppPolicy(appId, {
       isBlocked: newBlocked,
@@ -214,7 +229,7 @@ export default function BlockingPage() {
   }
 
   const selectedChild = children.find((c) => c._id === selectedChildId);
-  const pairedDevices = selectedChild?.devices || [];
+  const hasOnlineDevice = devices.some((d) => d.status === "online");
 
   if (status === "loading") {
     return (
@@ -279,39 +294,28 @@ export default function BlockingPage() {
           </div>
         </div>
 
-        {/* Paired Devices Section */}
-        {selectedChildId && pairedDevices.length > 0 && (
-          <div className="mb-6 p-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm">
-            <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
-              <span>📱</span> Paired Devices
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {pairedDevices.map((device, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-xs"
-                >
-                  <span className={`w-2 h-2 rounded-full ${
-                    device.status === "online" ? "bg-green-400" :
-                    device.status === "locked" ? "bg-red-400" :
-                    "bg-slate-400"
-                  }`} />
-                  <span className="text-white">{device.name}</span>
-                  <span className="text-slate-500 capitalize">{device.type}</span>
-                  <span className={`capitalize ${
-                    device.status === "online" ? "text-green-400" :
-                    device.status === "locked" ? "text-red-400" :
-                    "text-slate-400"
-                  }`}>{device.status}</span>
-                </div>
-              ))}
-              <button
-                onClick={() => setShowPairModal(true)}
-                className="px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-400 text-xs hover:bg-purple-500/30 transition-all cursor-pointer"
-              >
-                + Pair Another
-              </button>
-            </div>
+        {/* Device Connection Status */}
+        {selectedChildId && (
+          <div className="mb-6">
+            {devices.filter((d) => d.status === "online").length > 0 ? (
+              <div className="flex items-center gap-2 text-green-400 text-sm">
+                <span className="w-2 h-2 rounded-full bg-green-400" />
+                <span>{devices.filter((d) => d.status === "online").length} device(s) online</span>
+                <span className="text-slate-500">— App detection active</span>
+              </div>
+            ) : devices.length > 0 ? (
+              <div className="flex items-center gap-2 text-yellow-400 text-sm">
+                <span className="w-2 h-2 rounded-full bg-yellow-400" />
+                <span>Device(s) paired but offline</span>
+                <span className="text-slate-500">— App data may be stale</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-slate-500 text-sm">
+                <span>⏳</span>
+                <span>No device connected</span>
+                <span className="text-slate-600">— Install status not available</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -327,129 +331,165 @@ export default function BlockingPage() {
           <>
             {/* Architecture Note */}
             <div className="mb-6 p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-sm">
-              <strong>📋 Device-Control Architecture:</strong> This dashboard manages policies (block/allow/schedule) for apps and websites. 
-              Actual enforcement requires the Family Guardian browser extension or mobile app. 
-              The architecture is ready for Chrome/Edge extension, Android app, and iOS Screen Time integration.
+              <strong>📋 Architecture Note:</strong> This dashboard manages <strong>Available Policy</strong> for apps and websites.
+              Actual enforcement requires the Family Guardian mobile app or browser extension.
+              <span className="block mt-1">
+                {hasOnlineDevice
+                  ? "✅ Device connected — app detection is active. Installed status shown below is from the actual device."
+                  : "⚠️ No device connected. Install status shows 'Not Available'. Connect a device to detect installed apps."}
+              </span>
             </div>
 
-            {/* Common App Cards Grid */}
+            {/* App Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {Object.entries(appPolicies).map(([appId, policy]) => (
-                <div
-                  key={appId}
-                  className={`rounded-xl border p-4 transition-all ${
-                    policy.isBlocked
-                      ? "border-red-500/30 bg-red-500/5"
-                      : policy.isAllowed
-                      ? "border-green-500/30 bg-green-500/5"
-                      : "border-white/10 bg-white/5"
-                  }`}
-                >
-                  {/* App Icon & Name */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-2xl">{policy.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold text-sm truncate">{policy.name}</h3>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${CATEGORY_COLORS[policy.category] || "bg-slate-500/20 text-slate-400"}`}>
-                        {policy.category}
-                      </span>
+              {Object.entries(appPolicies).map(([appId, policy]) => {
+                const installedText = policy.deviceConnected
+                  ? policy.isInstalled
+                    ? "📱 Installed"
+                    : "❌ Not Installed"
+                  : "⏳ Not Available";
+
+                const installedColor = policy.deviceConnected
+                  ? policy.isInstalled
+                    ? "text-green-400 bg-green-500/10"
+                    : "text-slate-500 bg-slate-500/10"
+                  : "text-yellow-400 bg-yellow-500/10";
+
+                return (
+                  <div
+                    key={appId}
+                    className={`rounded-xl border p-4 transition-all ${
+                      policy.isBlocked
+                        ? "border-red-500/30 bg-red-500/5"
+                        : policy.isAllowed
+                        ? "border-green-500/30 bg-green-500/5"
+                        : "border-white/10 bg-white/5"
+                    }`}
+                  >
+                    {/* App Icon, Name, Installed Status */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-2xl">{policy.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-white font-semibold text-sm truncate">{policy.name}</h3>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${CATEGORY_COLORS[policy.category] || "bg-slate-500/20 text-slate-400"}`}>
+                            {policy.category}
+                          </span>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${installedColor}`}>
+                            {installedText}
+                          </span>
+                        </div>
+                      </div>
+                      {/* Lock/Unlock Toggle */}
+                      <button
+                        onClick={() => toggleBlock(appId)}
+                        className={`p-2 rounded-lg transition-all cursor-pointer ${
+                          policy.isBlocked
+                            ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                            : "bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                        }`}
+                        title={policy.isBlocked ? "Click to allow" : "Click to block"}
+                      >
+                        {policy.isBlocked ? "🔒" : "🔓"}
+                      </button>
                     </div>
-                    {/* Lock/Unlock Toggle */}
-                    <button
-                      onClick={() => toggleBlock(appId)}
-                      className={`p-2 rounded-lg transition-all cursor-pointer ${
-                        policy.isBlocked
-                          ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                          : "bg-green-500/20 text-green-400 hover:bg-green-500/30"
-                      }`}
-                      title={policy.isBlocked ? "Click to allow" : "Click to block"}
-                    >
-                      {policy.isBlocked ? "🔒" : "🔓"}
-                    </button>
-                  </div>
 
-                  {/* Domains */}
-                  {policy.domains.length > 0 && (
-                    <div className="mb-3 flex flex-wrap gap-1">
-                      {policy.domains.slice(0, 2).map((d) => (
-                        <span key={d} className="px-1.5 py-0.5 rounded bg-white/5 text-slate-500 text-[10px]">
-                          {d}
-                        </span>
-                      ))}
-                      {policy.domains.length > 2 && (
-                        <span className="text-slate-500 text-[10px]">+{policy.domains.length - 2}</span>
-                      )}
-                    </div>
-                  )}
+                    {/* Package Name */}
+                    {policy.appPackage && (
+                      <div className="mb-2">
+                        <span className="text-[10px] text-slate-600 font-mono">{policy.appPackage}</span>
+                      </div>
+                    )}
 
-                  {/* Action Buttons */}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      onClick={() => toggleBlock(appId)}
-                      className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
-                        policy.isBlocked
-                          ? "bg-red-500/30 text-red-300"
-                          : "bg-red-500/10 text-red-400 hover:bg-red-500/20"
-                      }`}
-                    >
-                      {policy.isBlocked ? "🚫 Blocked" : "Block"}
-                    </button>
-                    <button
-                      onClick={() => updateAppPolicy(appId, { isBlocked: false, isAllowed: true })}
-                      className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
-                        policy.isAllowed
-                          ? "bg-green-500/30 text-green-300"
-                          : "bg-green-500/10 text-green-400 hover:bg-green-500/20"
-                      }`}
-                    >
-                      {policy.isAllowed ? "✅ Allowed" : "Allow"}
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newSchedule = !policy.scheduleEnabled;
-                        updateAppPolicy(appId, {
-                          scheduleEnabled: newSchedule,
-                          scheduleBlocks: newSchedule
-                            ? [{ startTime: "08:00", endTime: "20:00", daysOfWeek: ["Mon", "Tue", "Wed", "Thu", "Fri"] }]
-                            : [],
-                        });
-                      }}
-                      className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
-                        policy.scheduleEnabled
-                          ? "bg-cyan-500/30 text-cyan-300"
-                          : "bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20"
-                      }`}
-                    >
-                      {policy.scheduleEnabled ? "📅 Scheduled" : "Schedule"}
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newLimit = policy.dailyLimitMinutes ? null : 60;
-                        updateAppPolicy(appId, { dailyLimitMinutes: newLimit });
-                      }}
-                      className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
-                        policy.dailyLimitMinutes
-                          ? "bg-purple-500/30 text-purple-300"
-                          : "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20"
-                      }`}
-                    >
-                      {policy.dailyLimitMinutes ? `⏱ ${policy.dailyLimitMinutes}m` : "Time Limit"}
-                    </button>
-                  </div>
-
-                  {/* Schedule Info */}
-                  {policy.scheduleEnabled && policy.scheduleBlocks.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-white/5">
-                      <div className="text-[10px] text-slate-500">
-                        {policy.scheduleBlocks[0].startTime} - {policy.scheduleBlocks[0].endTime}
-                        {policy.scheduleBlocks[0].daysOfWeek.length > 0 && (
-                          <> on {policy.scheduleBlocks[0].daysOfWeek.join(", ")}</>
+                    {/* Domains */}
+                    {policy.domains.length > 0 && (
+                      <div className="mb-3 flex flex-wrap gap-1">
+                        {policy.domains.slice(0, 2).map((d) => (
+                          <span key={d} className="px-1.5 py-0.5 rounded bg-white/5 text-slate-500 text-[10px]">
+                            {d}
+                          </span>
+                        ))}
+                        {policy.domains.length > 2 && (
+                          <span className="text-slate-500 text-[10px]">+{policy.domains.length - 2}</span>
                         )}
                       </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        onClick={() => toggleBlock(appId)}
+                        className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                          policy.isBlocked
+                            ? "bg-red-500/30 text-red-300"
+                            : "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                        }`}
+                      >
+                        {policy.isBlocked ? "🚫 Blocked" : "Block"}
+                      </button>
+                      <button
+                        onClick={() => updateAppPolicy(appId, { isBlocked: false, isAllowed: true })}
+                        className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                          policy.isAllowed
+                            ? "bg-green-500/30 text-green-300"
+                            : "bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                        }`}
+                      >
+                        {policy.isAllowed ? "✅ Allowed" : "Allow"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newSchedule = !policy.scheduleEnabled;
+                          updateAppPolicy(appId, {
+                            scheduleEnabled: newSchedule,
+                            scheduleBlocks: newSchedule
+                              ? [{ startTime: "08:00", endTime: "20:00", daysOfWeek: ["mon", "tue", "wed", "thu", "fri"] }]
+                              : [],
+                          });
+                        }}
+                        className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                          policy.scheduleEnabled
+                            ? "bg-cyan-500/30 text-cyan-300"
+                            : "bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20"
+                        }`}
+                      >
+                        {policy.scheduleEnabled ? "📅 Scheduled" : "Schedule"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newLimit = policy.dailyLimitMinutes ? null : 60;
+                          updateAppPolicy(appId, { dailyLimitMinutes: newLimit });
+                        }}
+                        className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                          policy.dailyLimitMinutes
+                            ? "bg-purple-500/30 text-purple-300"
+                            : "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20"
+                        }`}
+                      >
+                        {policy.dailyLimitMinutes ? `⏱ ${policy.dailyLimitMinutes}m` : "Time Limit"}
+                      </button>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {/* Policy Summary */}
+                    <div className="mt-2 pt-2 border-t border-white/5 flex items-center gap-2 text-[10px]">
+                      {policy.isBlocked && (
+                        <span className="text-red-400">Policy: Blocked</span>
+                      )}
+                      {policy.isAllowed && !policy.scheduleEnabled && !policy.dailyLimitMinutes && (
+                        <span className="text-green-400">Policy: Allowed</span>
+                      )}
+                      {policy.scheduleEnabled && policy.scheduleBlocks.length > 0 && (
+                        <span className="text-cyan-400">
+                          {policy.scheduleBlocks[0].startTime} - {policy.scheduleBlocks[0].endTime}
+                        </span>
+                      )}
+                      {policy.dailyLimitMinutes && (
+                        <span className="text-purple-400">⏱ {policy.dailyLimitMinutes} min/day</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Custom App Form */}
@@ -499,7 +539,7 @@ export default function BlockingPage() {
                           setCustomAppName("");
                           setCustomAppDomain("");
                           setShowCustomAppForm(false);
-                          await fetchPolicies();
+                          await fetchData();
                         }
                       } catch {
                         setError("Failed to add custom app");
