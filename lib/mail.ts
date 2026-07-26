@@ -1,5 +1,9 @@
 import sgMail from "@sendgrid/mail";
 
+const SENDER_EMAIL = process.env.EMAIL_FROM || "Fromsrofficial1974@gmail.com";
+const REPLY_TO_EMAIL = process.env.EMAIL_REPLY_TO || "Replysrofficial1974@gmail.com";
+const SENDER_NAME = process.env.EMAIL_SENDER_NAME || "SmartDocs AI";
+
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 } else {
@@ -17,7 +21,8 @@ export const sendPasswordResetEmail = async (to: string, token: string) => {
 
   const msg = {
     to,
-    from: "support@smartdocs.ai", // Use a verified sender email
+    from: { email: SENDER_EMAIL, name: SENDER_NAME },
+    replyTo: REPLY_TO_EMAIL,
     subject: "Reset Your SmartDocs AI Password",
     html: `
       <p>You are receiving this email because a password reset request was made for your account.</p>
