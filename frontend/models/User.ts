@@ -1,26 +1,41 @@
-import mongoose, { Document, Model, Schema } from "mongoose"
+import mongoose, { Document, Model, models, Schema } from "mongoose";
 
 export interface IUser extends Document {
-  fullName: string
-  email?: string
-  countryCode?: string
-  phoneNumber?: string
-  passwordHash: string
-  createdAt: Date
-  updatedAt: Date
+  fullName: string;
+  email: string;
+  password?: string;
+  passwordHash?: string;
+  image?: string;
+  provider: string;
+  emailVerified?: Date | null;
+  verificationToken?: string | null;
+  resetPasswordToken?: string | null;
+  resetPasswordExpires?: Date | null;
+  hasSeenWelcome?: boolean;
+  phoneNumber?: string;
+  countryCode?: string;
 }
 
-const UserSchema = new Schema<IUser>(
+const UserSchema: Schema = new Schema(
   {
-    fullName: { type: String, required: true, trim: true },
-    email: { type: String, required: false, lowercase: true, trim: true, unique: true, sparse: true },
-    countryCode: { type: String, required: false, trim: true },
-    phoneNumber: { type: String, required: false, trim: true, unique: true, sparse: true },
-    passwordHash: { type: String, required: true },
+    fullName: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String },
+    passwordHash: { type: String },
+    image: { type: String },
+    provider: { type: String, default: "credentials" },
+    emailVerified: { type: Date, default: null },
+    verificationToken: { type: String },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
+    hasSeenWelcome: { type: Boolean, default: false },
+    phoneNumber: { type: String },
+    countryCode: { type: String },
   },
-  { timestamps: true },
-)
+  { timestamps: true }
+);
 
-const User = (mongoose.models.User as Model<IUser>) || mongoose.model<IUser>("User", UserSchema)
+const User: Model<IUser> = models.User || mongoose.model<IUser>("User", UserSchema);
 
-export default User
+export default User;
+

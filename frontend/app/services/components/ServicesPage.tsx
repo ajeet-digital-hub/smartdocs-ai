@@ -65,11 +65,11 @@ export default function ServicesPage() {
       setApiError(null);
       try {
         const [servicesRes, categoriesRes, trendingRes, popularRes, newRes] = await Promise.all([
-          getServices({ limit: "100" }).catch(() => ({ ok: false })),
-          getCategories().catch(() => ({ ok: false })),
-          getTrendingServices().catch(() => ({ ok: false })),
-          getPopularServices().catch(() => ({ ok: false })),
-          getNewServices().catch(() => ({ ok: false })),
+          getServices({ limit: "100" }).catch(() => ({ ok: false, data: undefined })),
+          getCategories().catch(() => ({ ok: false, data: undefined })),
+          getTrendingServices().catch(() => ({ ok: false, data: undefined })),
+          getPopularServices().catch(() => ({ ok: false, data: undefined })),
+          getNewServices().catch(() => ({ ok: false, data: undefined })),
         ]);
 
         let loadedServices: Service[] = [];

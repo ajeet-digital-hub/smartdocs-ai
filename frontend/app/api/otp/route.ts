@@ -23,15 +23,17 @@ function badRequest(message: string, status = 400) {
 
 async function sendOtpEmail(email: string, code: string) {
   const apiKey = process.env.SENDGRID_API_KEY
-  const fromEmail = process.env.EMAIL_FROM
+  const fromEmail = process.env.EMAIL_FROM || "Fromsrofficial1974@gmail.com"
+  const replyToEmail = process.env.EMAIL_REPLY_TO || "Replysrofficial1974@gmail.com"
+  const senderName = process.env.EMAIL_SENDER_NAME || "SmartDocs AI"
 
-  if (!apiKey || !fromEmail) {
-    throw new Error("Email service is not configured. Set SENDGRID_API_KEY and EMAIL_FROM in environment variables.")
+  if (!apiKey) {
+    throw new Error("Email service is not configured. Set SENDGRID_API_KEY in environment variables.")
   }
 
   const payload = {
-    personalizations: [{ to: [{ email }] }],
-    from: { email: fromEmail },
+    personalizations: [{ to: [{ email }], reply_to: { email: replyToEmail } }],
+    from: { email: fromEmail, name: senderName },
     subject: "Your SmartDocs AI verification code",
     content: [
       {

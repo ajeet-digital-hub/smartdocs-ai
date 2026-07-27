@@ -1,0 +1,450 @@
+.signupPage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background:
+    radial-gradient(
+      900px 500px at 10% 10%,
+      #351924 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at 90% 90%,
+      #221827 0%,
+      transparent 60%
+    ),
+    #141018;
+  font-family:
+    "Segoe UI",
+    -apple-system,
+    BlinkMacSystemFont,
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+.signupCard {
+  width: 100%;
+  max-width: 520px;
+  background: #fffdf7;
+  border-radius: 24px;
+  padding: 42px 46px;
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.4);
+}
+
+.brandRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.brand {
+  color: #8b2e3f;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+}
+
+.loginLink {
+  color: #6e6459;
+  font-size: 13px;
+}
+
+.loginLink a,
+.terms a {
+  color: #8b2e3f;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.progressWrapper {
+  margin-bottom: 30px;
+}
+
+.progressLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 9px;
+  font-size: 11px;
+  color: #a79c8b;
+}
+
+.progressLabels .active {
+  color: #8b2e3f;
+  font-weight: 700;
+}
+
+.progressTrack {
+  height: 5px;
+  background: #ede5d7;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: #8b2e3f;
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.signupCard h1 {
+  margin: 0 0 8px;
+  color: #241f1b;
+  font-size: 29px;
+  line-height: 1.2;
+}
+
+.subtitle {
+  margin: 0 0 26px;
+  color: #6e6459;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.signupCard label {
+  display: block;
+  margin-bottom: 8px;
+  color: #241f1b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.signupCard input,
+.signupCard select {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 14px 15px;
+  margin-bottom: 20px;
+  border: 1.5px solid #e5dcc8;
+  border-radius: 12px;
+  outline: none;
+  background: #fbf5e9;
+  color: #241f1b;
+  font-size: 15px;
+  transition: 0.15s ease;
+}
+
+.signupCard input:focus,
+.signupCard select:focus {
+  border-color: #8b2e3f;
+  background: #fff;
+}
+
+.methodTabs,
+.otpChannel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.methodTabs button,
+.otpChannel button {
+  padding: 13px;
+  border: 1.5px solid #e5dcc8;
+  border-radius: 11px;
+  background: #fff;
+  color: #241f1b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.methodTabs button.selected,
+.otpChannel button.selected {
+  border-color: #8b2e3f;
+  background: #8b2e3f;
+  color: #fff;
+}
+
+.phoneRow {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 8px;
+}
+
+.smallLabel {
+  font-size: 13px;
+}
+
+.primaryButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 15px;
+  border: 0;
+  border-radius: 12px;
+  background: #8b2e3f;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primaryButton:disabled {
+  background: #c49a8f;
+  cursor: not-allowed;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 26px 0 17px;
+}
+
+.divider span {
+  flex: 1;
+  height: 1px;
+  background: #e5dcc8;
+}
+
+.divider b {
+  color: #a79c8b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.otherOptions {
+  text-align: center;
+  color: #6e6459;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.googleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px;
+  border: 1.5px solid #e5dcc8;
+  border-radius: 12px;
+  background: #fff;
+  color: #241f1b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.errorBox {
+  padding: 13px 15px;
+  margin-bottom: 20px;
+  border: 1px solid #e9a7a0;
+  border-radius: 11px;
+  background: #fdf0ef;
+  color: #b52f27;
+  font-size: 14px;
+}
+
+.otpInputs {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 9px;
+  margin: 30px 0;
+}
+
+.otpInputs input {
+  height: 58px;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.resend {
+  margin-top: 20px;
+  text-align: center;
+  color: #6e6459;
+  font-size: 14px;
+}
+
+.resend button,
+.backButton {
+  border: 0;
+  background: transparent;
+  color: #8b2e3f;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.backButton {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+}
+
+.passwordWrapper {
+  position: relative;
+}
+
+.passwordWrapper input {
+  padding-right: 50px;
+}
+
+.passwordWrapper button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 5px;
+  border: 0;
+  background: transparent;
+  color: #8b8175;
+  cursor: pointer;
+}
+
+.strengthTrack {
+  height: 6px;
+  margin-top: -9px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #ede5d7;
+}
+
+.strengthBar {
+  height: 100%;
+  background: #3f7d53;
+  transition: width 0.25s ease;
+}
+
+.match {
+  margin-top: -12px;
+  margin-bottom: 15px;
+  color: #c9584e;
+  font-size: 13px;
+}
+
+.match.success {
+  color: #3f7d53;
+}
+
+.passwordRules {
+  padding: 15px 16px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  background: #fbf5e9;
+}
+
+.rule {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  padding: 5px 0;
+  color: #6e6459;
+  font-size: 13px;
+}
+
+.rule.valid {
+  color: #3f7d53;
+}
+
+.terms {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  margin-bottom: 22px;
+  color: #4f4841;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.terms input {
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  margin: 1px 0 0;
+  accent-color: #8b2e3f;
+}
+
+.successScreen {
+  padding: 25px 0 10px;
+  text-align: center;
+}
+
+.successIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 78px;
+  height: 78px;
+  margin: 0 auto 24px;
+  border-radius: 50%;
+  background: #3f7d53;
+  color: white;
+  font-size: 40px;
+  font-weight: 700;
+  animation: successPop 0.45s ease-out;
+}
+
+.successScreen p {
+  margin: 0 0 30px;
+  color: #6e6459;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+@keyframes successPop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+
+  70% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 600px) {
+  .signupPage {
+    padding: 20px 12px;
+  }
+
+  .signupCard {
+    padding: 30px 22px;
+    border-radius: 20px;
+  }
+
+  .brandRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .loginLink {
+    font-size: 13px;
+  }
+
+  .signupCard h1 {
+    font-size: 26px;
+  }
+
+  .otpInputs {
+    gap: 5px;
+  }
+
+  .otpInputs input {
+    height: 52px;
+    font-size: 20px;
+  }
+
+  .phoneRow {
+    grid-template-columns: 90px 1fr;
+  }
+}
