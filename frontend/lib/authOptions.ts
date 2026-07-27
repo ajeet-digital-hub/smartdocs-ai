@@ -23,22 +23,49 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        // Early credential validation (no DB needed)
+        if (!credentials?.email || !credentials.password) {
+          return null;
+        }
+
+        const normalizedEmail = credentials.email.toLowerCase().trim();
+
+        // Establish DB connection — failures here are INFRASTRUCTURE errors, not auth errors
         try {
-          // Check if there is an existing connection before creating a new one
           if (mongoose.connection.readyState !== 1) {
-            if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI not set");
+            if (!process.env.MONGODB_URI) {
+              console.error("AUTHORIZE: MONGODB_URI not set");
+              return null;
+            }
             await mongoose.connect(process.env.MONGODB_URI, {
               serverSelectionTimeoutMS: 5000,
+              dbName: process.env.MONGODB_DB_NAME || "smartdocs-ai",
             });
           }
+        } catch (error) {
+          // Database / TLS / connection error — log safely and throw
+          // DO NOT return null, which would be silently converted to CredentialsSignin
+          const errorName = error instanceof Error ? error.constructor.name : typeof error;
+          console.error("AUTHORIZE DB CONNECTION ERROR:", errorName);
+          throw new Error("Authentication service unavailable. Please try again later.");
+        }
 
-          if (!credentials?.email || !credentials.password) return null;
+        // Authenticate user — null returns here are genuine invalid-credentials
+        try {
+          const user = await User.findOne({ email: normalizedEmail });
+          if (!user) {
+            return null;
+          }
 
-          const user = await User.findOne({ email: credentials.email.toLowerCase().trim() });
-          if (!user || !user.passwordHash) return null;
+          if (!user.passwordHash) {
+            console.error("AUTHORIZE: User found but passwordHash is missing for email:", user.email);
+            return null;
+          }
 
           const isPasswordCorrect = await bcrypt.compare(credentials.password, user.passwordHash);
-          if (!isPasswordCorrect) return null;
+          if (!isPasswordCorrect) {
+            return null;
+          }
 
           return {
             id: user._id.toString(),
@@ -50,8 +77,10 @@ export const authOptions: NextAuthOptions = {
             hasSeenWelcome: user.hasSeenWelcome,
           };
         } catch (error) {
-          console.error("AUTHORIZE ERROR:", error);
-          return null;
+          // Unexpected query/comparison error — log safely and throw
+          const errorName = error instanceof Error ? error.constructor.name : typeof error;
+          console.error("AUTHORIZE UNEXPECTED ERROR:", errorName);
+          throw new Error("Authentication failed due to an internal error.");
         }
       },
     }),

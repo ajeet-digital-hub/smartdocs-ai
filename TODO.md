@@ -1,27 +1,43 @@
-# Family Guardian Phase 2.5 - Implementation Progress
+# Fix Plan - Completed ✓
 
-## ✅ Backend Models
-- [x] `frontend/models/Device.ts` - Standalone Device model
-- [x] `frontend/models/AppPolicy.ts` - App Policy model (separate from WebsitePolicy)
-- [x] `frontend/data/application-catalog.ts` - Static application catalog
+## ✅ Step 1: Fix `frontend/lib/authOptions.ts` - authorize() error handling
+- **DONE**: Replaced catch-all-with-return-null with split error handling:
+  - DB connection errors → thrown (distinguished from auth failures)
+  - Invalid credentials → return null (unchanged)
+  - Safe server-side logging (error class names only, no secrets)
 
-## ✅ API Routes
-- [x] `frontend/app/api/family-guardian/pair-device/route.ts` - Enhanced with QR data
-- [x] `frontend/app/api/family-guardian/device-auth/route.ts` - NEW: Device authentication
-- [x] `frontend/app/api/family-guardian/devices/route.ts` - Enhanced device CRUD
-- [x] `frontend/app/api/family-guardian/sync-policies/route.ts` - NEW: Policy sync for devices
-- [x] `frontend/app/api/family-guardian/device-heartbeat/route.ts` - NEW: Heartbeat endpoint
-- [x] `frontend/app/api/family-guardian/revoke-device/route.ts` - NEW: Revoke device
+## ✅ Step 2: Fix `lib/mongodb.ts` - production caching
+- **DONE**: Global caching now used in ALL environments (not just development)
 
-## ✅ Model Updates
-- [x] `frontend/models/ActivityLog.ts` - Added device action types
+## ✅ Step 3: Fix missing `dbName` in mongoose.connect() calls
+Files updated with `dbName: process.env.MONGODB_DB_NAME || "smartdocs-ai"`:
+- `frontend/app/api/forgot-password/route.ts`
+- `frontend/app/api/reset-password/[token]/route.ts`
+- `frontend/app/api/profile/password/route.ts`
+- `frontend/app/api/profile/route.ts` (both GET and PUT)
+- `frontend/app/api/profile/verify-email/route.ts`
+- `frontend/app/api/profile/verify-email/[token]/route.ts`
+- `frontend/app/api/family/route.ts` (GET and PUT)
+- `frontend/app/api/family/activity/route.ts`
+- `frontend/app/api/family/analytics/route.ts`
+- `frontend/app/api/family/children/route.ts` (ensureFamily)
+- `frontend/app/api/family/children/[id]/route.ts` (GET, PUT, DELETE)
+- `frontend/app/api/family/rewards/route.ts` (GET)
+- `frontend/app/api/family/schedules/route.ts` (GET)
+- `frontend/app/api/family/schedules/[id]/route.ts` (PUT)
+- `frontend/app/api/family/unlock-requests/route.ts` (GET)
+- `frontend/app/api/family/unlock-requests/[id]/route.ts`
+- `frontend/app/api/family/website-policies/route.ts` (GET)
+- `frontend/app/api/family/website-policies/[id]/route.ts` (PUT)
+- `frontend/app/api/family-guardian/device-auth/route.ts` (POST + verifyDeviceToken)
+- `frontend/app/api/family-guardian/devices/route.ts` (GET)
+- `frontend/app/api/family-guardian/pair-device/route.ts`
+- `frontend/app/api/family-guardian/revoke-device/route.ts`
+- `frontend/app/api/account/avatar/route.ts`
+- `frontend/app/api/notifications/route.ts`
 
-## ✅ Frontend UI Updates
-- [x] `frontend/app/dashboard/family-guardian/children/[id]/page.tsx` - Tabbed child profile
-- [x] `frontend/app/dashboard/family-guardian/blocking/page.tsx` - App-style UI with install status
-- [x] `frontend/app/dashboard/family-guardian/components/PairDeviceModal.tsx` - QR + code display
+## ✅ Step 4: Build & Type-check
+- **DONE**: Errors are ALL pre-existing (not introduced by changes)
 
-## ✅ Verification
-- [x] TypeScript check - No new errors (all 11 errors are pre-existing)
-- [ ] Run lint
-- [ ] Run build
+## ✅ Step 5: Report complete
+

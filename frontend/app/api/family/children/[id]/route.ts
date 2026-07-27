@@ -15,7 +15,9 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 
     if (mongoose.connection.readyState !== 1) {
       if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI not set");
-      await mongoose.connect(process.env.MONGODB_URI);
+      await mongoose.connect(process.env.MONGODB_URI, {
+        dbName: process.env.MONGODB_DB_NAME || "smartdocs-ai",
+      });
     }
 
     const family = await Family.findOne({ parentId: session.user.id });
@@ -47,7 +49,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     if (mongoose.connection.readyState !== 1) {
       if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI not set");
-      await mongoose.connect(process.env.MONGODB_URI);
+      await mongoose.connect(process.env.MONGODB_URI, {
+        dbName: process.env.MONGODB_DB_NAME || "smartdocs-ai",
+      });
     }
 
     const family = await Family.findOne({ parentId: session.user.id });
@@ -97,7 +101,9 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
 
     if (mongoose.connection.readyState !== 1) {
       if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI not set");
-      await mongoose.connect(process.env.MONGODB_URI);
+      await mongoose.connect(process.env.MONGODB_URI, {
+        dbName: process.env.MONGODB_DB_NAME || "smartdocs-ai",
+      });
     }
 
     const family = await Family.findOne({ parentId: session.user.id });

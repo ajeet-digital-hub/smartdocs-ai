@@ -9,7 +9,9 @@ import ActivityLog from "@/models/ActivityLog";
 async function ensureFamily(userId: string) {
   if (mongoose.connection.readyState !== 1) {
     if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI not set");
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URI, {
+      dbName: process.env.MONGODB_DB_NAME || "smartdocs-ai",
+    });
   }
 
   let family = await Family.findOne({ parentId: userId });
