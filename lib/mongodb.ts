@@ -1,24 +1,23 @@
 import { MongoClient } from "mongodb"
 
 declare global {
+  // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined
 }
 
-function buildClientPromise(): Promise<MongoClient> {
-  const uri = process.env.MONGODB_URI
-  if (!uri) throw new Error("MONGODB_URI is not set in .env.local")
-  return new MongoClient(uri).connect()
+const uri = process.env.MONGODB_URI
+if (!uri) {
+  throw new Error("MONGODB_URI is not set in .env.local")
 }
 
+let client: MongoClient
 let clientPromise: Promise<MongoClient>
 
-if (process.env.NODE_ENV === "development") {
-  if (!globalThis._mongoClientPromise) {
-    globalThis._mongoClientPromise = buildClientPromise()
-  }
-  clientPromise = globalThis._mongoClientPromise
-} else {
-  clientPromise = buildClientPromise()
+// Use global caching in all environments to prevent connection storms
+if (!globalThis._mongoClientPromise) {
+  client = new MongoClient(uri)
+  globalThis._mongoClientPromise = client.connect()
 }
+clientPromise = globalThis._mongoClientPromise
 
 export default clientPromise

@@ -34,7 +34,9 @@ export async function POST(request: Request) {
 
     if (mongoose.connection.readyState !== 1) {
       if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI not set");
-      await mongoose.connect(process.env.MONGODB_URI);
+      await mongoose.connect(process.env.MONGODB_URI, {
+        dbName: process.env.MONGODB_DB_NAME || "smartdocs-ai",
+      });
     }
 
     // Verify the parent owns this family
