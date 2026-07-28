@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { Service, Category } from "../types";
 import ServiceCard from "./ServiceCard";
 import SearchBar from "./SearchBar";
@@ -52,11 +53,11 @@ export default function ServicesPage() {
   const [favoriteServices, setFavoriteServices] = useState<Service[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // Check if user is logged in
+  // Check if user is logged in via NextAuth
+  const { data: session } = useSession()
   const isLoggedIn = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    return !!localStorage.getItem("sd_token") || !!localStorage.getItem("sd_user");
-  }, []);
+    return !!session?.user?.email;
+  }, [session]);
 
   // Fetch all data on mount (stable deps to avoid infinite loop)
   useEffect(() => {
@@ -65,7 +66,7 @@ export default function ServicesPage() {
       setApiError(null);
       try {
         const [servicesRes, categoriesRes, trendingRes, popularRes, newRes] = await Promise.all([
-          getServices({ limit: "100" }).catch(() => ({ ok: false, data: undefined })),
+          getServices().catch(() => ({ ok: false, data: undefined })),
           getCategories().catch(() => ({ ok: false, data: undefined })),
           getTrendingServices().catch(() => ({ ok: false, data: undefined })),
           getPopularServices().catch(() => ({ ok: false, data: undefined })),

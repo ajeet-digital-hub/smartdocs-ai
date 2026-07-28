@@ -111,7 +111,7 @@ export const categories: Category[] = [
     icon: "🔐",
     color: "#dc2626",
     gradient: "from-red-500 to-rose-500",
-    count: 8,
+    count: 9,
   },
   {
     id: "file-tools",
@@ -202,4 +202,3 @@ export const categories: Category[] = [
     count: 1,
   },
 ];
-

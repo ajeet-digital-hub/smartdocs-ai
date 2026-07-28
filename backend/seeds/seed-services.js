@@ -222,6 +222,7 @@ const servicesData = [
   { id: "secure-file-sharing", name: "Secure File Sharing", description: "Share files with end-to-end encryption", category: "Security", icon: "🔗", tags: ["share", "secure", "file"], popular: false, trending: false, new: false },
   { id: "two-factor-auth", name: "2FA Manager", description: "Manage two-factor authentication codes", category: "Security", icon: "📱", tags: ["2fa", "authentication", "security"], popular: false, trending: false, new: false },
   { id: "vpn-generator", name: "VPN Config Generator", description: "Generate VPN configuration files", category: "Security", icon: "🛡️", tags: ["vpn", "config", "security"], popular: false, trending: false, new: false },
+  { id: "family-guardian", name: "Family Guardian", description: "Organize family documents and keep important information protected", category: "Security", icon: "👨‍👩‍👧‍👦", tags: ["family", "guardian", "security", "documents"], popular: false, trending: false, new: false },
   // ─── File Tools (10) ───
   { id: "zip-tool", name: "ZIP", description: "Create and extract ZIP archives", category: "File Tools", icon: "🗜️", tags: ["zip", "compress", "archive"], popular: true, trending: false, new: false },
   { id: "rar-tool", name: "RAR", description: "Create and extract RAR archives", category: "File Tools", icon: "🗜️", tags: ["rar", "compress", "archive"], popular: false, trending: false, new: false },
@@ -417,4 +418,3 @@ seed().catch((err) => {
   console.error('Seed failed:', err);
   process.exit(1);
 });
-

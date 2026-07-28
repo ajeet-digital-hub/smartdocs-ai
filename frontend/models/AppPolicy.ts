@@ -1,80 +1,57 @@
-import mongoose, { Document, Model, Schema } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose"
 
-export interface IScheduleBlock {
-  startTime: string;
-  endTime: string;
-  daysOfWeek: string[];
-}
-
-export interface ITemporaryUnlock {
-  expiresAt: Date;
-  reason: string;
-}
+export type PolicyState = "allowed" | "limited" | "scheduled" | "blocked"
+export type PolicyScope = "global" | "child" | "device"
+export type AppPlatform = "android" | "ios" | "web" | "tv" | "all"
 
 export interface IAppPolicy extends Document {
-  childId: mongoose.Types.ObjectId;
-  familyId: mongoose.Types.ObjectId;
-  appId: string;
-  appName: string;
-  appPackage: string;
-  appStoreId?: string;
-  category: string;
-  icon?: string;
-  isBlocked: boolean;
-  isAllowed: boolean;
-  dailyLimitMinutes?: number;
-  scheduleBlocks: IScheduleBlock[];
-  temporaryUnlock?: ITemporaryUnlock;
-  policyVersion: number;
-  createdAt: Date;
-  updatedAt: Date;
+  familyId: mongoose.Types.ObjectId
+  childId?: mongoose.Types.ObjectId
+  deviceId?: mongoose.Types.ObjectId
+  scope: PolicyScope
+  appId: string
+  appName: string
+  packageName?: string
+  platform: AppPlatform
+  category?: string
+  state: PolicyState
+  dailyLimitMinutes?: number
+  scheduleStart?: string
+  scheduleEnd?: string
+  allowedDays: number[]
+  timezone: string
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
 }
-
-const ScheduleBlockSchema = new Schema<IScheduleBlock>(
-  {
-    startTime: { type: String, required: true },
-    endTime: { type: String, required: true },
-    daysOfWeek: [{ type: String, enum: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] }],
-  },
-  { _id: false }
-);
-
-const TemporaryUnlockSchema = new Schema<ITemporaryUnlock>(
-  {
-    expiresAt: { type: Date, required: true },
-    reason: { type: String, required: true },
-  },
-  { _id: false }
-);
 
 const AppPolicySchema = new Schema<IAppPolicy>(
   {
-    childId: { type: Schema.Types.ObjectId, ref: "Child", required: true, index: true },
     familyId: { type: Schema.Types.ObjectId, ref: "Family", required: true, index: true },
-    appId: { type: String, required: true },
+    childId: { type: Schema.Types.ObjectId, ref: "Child", index: true },
+    deviceId: { type: Schema.Types.ObjectId, ref: "Device", index: true },
+    scope: { type: String, enum: ["global", "child", "device"], default: "child" },
+    appId: { type: String, required: true, trim: true },
     appName: { type: String, required: true, trim: true },
-    appPackage: { type: String, required: true, trim: true },
-    appStoreId: { type: String },
-    category: { type: String, required: true },
-    icon: { type: String },
-    isBlocked: { type: Boolean, default: false },
-    isAllowed: { type: Boolean, default: true },
-    dailyLimitMinutes: { type: Number },
-    scheduleBlocks: [ScheduleBlockSchema],
-    temporaryUnlock: { type: TemporaryUnlockSchema },
-    policyVersion: { type: Number, default: 1 },
+    packageName: { type: String, trim: true },
+    platform: { type: String, enum: ["android", "ios", "web", "tv", "all"], default: "all" },
+    category: { type: String, trim: true },
+    state: { type: String, enum: ["allowed", "limited", "scheduled", "blocked"], required: true },
+    dailyLimitMinutes: { type: Number, min: 0 },
+    scheduleStart: { type: String },
+    scheduleEnd: { type: String },
+    allowedDays: [{ type: Number, min: 0, max: 6 }],
+    timezone: { type: String, default: "UTC" },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
-);
+)
 
-AppPolicySchema.index({ childId: 1, appId: 1 }, { unique: true });
-AppPolicySchema.index({ childId: 1, appPackage: 1 });
-AppPolicySchema.index({ familyId: 1, isBlocked: 1 });
-AppPolicySchema.index({ childId: 1, policyVersion: 1 });
+AppPolicySchema.index({ familyId: 1, appId: 1 })
+AppPolicySchema.index({ childId: 1, appId: 1 })
 
-const AppPolicy: Model<IAppPolicy> =
-  (mongoose.models.AppPolicy as Model<IAppPolicy>) ||
-  mongoose.model<IAppPolicy>("AppPolicy", AppPolicySchema);
+const AppPolicy = (mongoose.models.AppPolicy as Model<IAppPolicy>) ||
+  mongoose.model<IAppPolicy>("AppPolicy", AppPolicySchema)
 
-export default AppPolicy;
+export default AppPolicy
 

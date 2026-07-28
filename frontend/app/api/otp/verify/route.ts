@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import clientPromise from "../../../../lib/mongodb"
+import { getMongoClient } from "../../../../lib/mongodb"
 import { createContactKey, otpStore } from "../store"
 import { isValidEmail, normalizePhoneNumber } from "../../utils"
 
@@ -49,21 +49,18 @@ async function verifyPhoneOtp(phone: string, code: string) {
 }
 
 async function createUser(stored: any) {
-  const dbName = process.env.MONGODB_DB_NAME
-  if (!dbName) {
-    throw new Error("Database name is not configured. Set MONGODB_DB_NAME in environment variables.")
-  }
+  const dbName = process.env.MONGODB_DB_NAME || "smartdocs-ai"
 
   try {
-    const client = await clientPromise
+    const client = await getMongoClient()
     const db = client.db(dbName)
     const usersCollection = db.collection("users")
 
     const userDocument = {
       fullName: stored.fullName,
       email: stored.contactType === "email" ? stored.contact : undefined,
-      phone: stored.contactType === "phone" ? stored.contact : undefined,
-      password: stored.passwordHash,
+      phoneNumber: stored.contactType === "phone" ? stored.contact : undefined,
+      passwordHash: stored.passwordHash,
       createdAt: new Date(),
     }
 
@@ -87,12 +84,13 @@ export async function POST(request: Request) {
     if (stored.purpose === "signup") {
       try {
         await createUser(stored)
-        return NextResponse.json({ ok: true, message: "Account created successfully" })
+        return NextResponse.json({ ok: true, message: "Account created successfully", email: stored.contact, fullName: stored.fullName })
       } catch (error) {
         return badRequest(error instanceof Error ? error.message : "An unexpected error occurred.", 500)
       }
     }
-    return NextResponse.json({ ok: true })
+    // For login, return the email so the frontend can sign in via NextAuth
+    return NextResponse.json({ ok: true, email: stored.contact })
   }
 
   if (typeof body.email === "string") {

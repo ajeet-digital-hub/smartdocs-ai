@@ -1,55 +1,52 @@
-import mongoose, { Document, Model, Schema } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose"
 
-export interface IScheduleBlock {
-  startTime: string;
-  endTime: string;
-  daysOfWeek: string[];
-}
+export type PolicyState = "allowed" | "limited" | "scheduled" | "blocked"
+export type PolicyScope = "global" | "child" | "device"
 
 export interface IWebsitePolicy extends Document {
-  childId: mongoose.Types.ObjectId;
-  familyId: mongoose.Types.ObjectId;
-  name: string;
-  domain: string;
-  category: string;
-  icon?: string;
-  isBlocked: boolean;
-  dailyLimitMinutes?: number;
-  scheduleBlocks: IScheduleBlock[];
-  createdAt: Date;
-  updatedAt: Date;
+  familyId: mongoose.Types.ObjectId
+  childId?: mongoose.Types.ObjectId
+  deviceId?: mongoose.Types.ObjectId
+  scope: PolicyScope
+  domain: string
+  displayName: string
+  category?: string
+  state: PolicyState
+  dailyLimitMinutes?: number
+  scheduleStart?: string // HH:mm format
+  scheduleEnd?: string // HH:mm format
+  allowedDays: number[] // 0=Sun, 1=Mon, ...
+  timezone: string
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
 }
-
-const ScheduleBlockSchema = new Schema<IScheduleBlock>(
-  {
-    startTime: { type: String, required: true },
-    endTime: { type: String, required: true },
-    daysOfWeek: [{ type: String, enum: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] }],
-  },
-  { _id: false }
-);
 
 const WebsitePolicySchema = new Schema<IWebsitePolicy>(
   {
-    childId: { type: Schema.Types.ObjectId, ref: "Child", required: true, index: true },
     familyId: { type: Schema.Types.ObjectId, ref: "Family", required: true, index: true },
-    name: { type: String, required: true, trim: true },
+    childId: { type: Schema.Types.ObjectId, ref: "Child", index: true },
+    deviceId: { type: Schema.Types.ObjectId, ref: "Device", index: true },
+    scope: { type: String, enum: ["global", "child", "device"], default: "child" },
     domain: { type: String, required: true, trim: true, lowercase: true },
-    category: { type: String, required: true },
-    icon: { type: String },
-    isBlocked: { type: Boolean, default: false },
-    dailyLimitMinutes: { type: Number },
-    scheduleBlocks: [ScheduleBlockSchema],
+    displayName: { type: String, required: true, trim: true },
+    category: { type: String, trim: true },
+    state: { type: String, enum: ["allowed", "limited", "scheduled", "blocked"], required: true },
+    dailyLimitMinutes: { type: Number, min: 0 },
+    scheduleStart: { type: String },
+    scheduleEnd: { type: String },
+    allowedDays: [{ type: Number, min: 0, max: 6 }],
+    timezone: { type: String, default: "UTC" },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
-);
+)
 
-WebsitePolicySchema.index({ childId: 1, domain: 1 }, { unique: true });
-WebsitePolicySchema.index({ familyId: 1, isBlocked: 1 });
+WebsitePolicySchema.index({ familyId: 1, domain: 1 })
+WebsitePolicySchema.index({ childId: 1, domain: 1 })
 
-const WebsitePolicy: Model<IWebsitePolicy> =
-  (mongoose.models.WebsitePolicy as Model<IWebsitePolicy>) ||
-  mongoose.model<IWebsitePolicy>("WebsitePolicy", WebsitePolicySchema);
+const WebsitePolicy = (mongoose.models.WebsitePolicy as Model<IWebsitePolicy>) ||
+  mongoose.model<IWebsitePolicy>("WebsitePolicy", WebsitePolicySchema)
 
-export default WebsitePolicy;
+export default WebsitePolicy
 

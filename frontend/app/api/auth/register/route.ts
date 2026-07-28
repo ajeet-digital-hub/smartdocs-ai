@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcrypt"
-import clientPromise from "@/lib/mongodb"
+import { getMongoClient } from "@/lib/mongodb"
 import {
   isValidCountryCode,
   isValidEmail,
@@ -82,10 +82,11 @@ export async function POST(request: Request) {
 
   let db
   try {
-    const client = await clientPromise
+    const client = await getMongoClient()
     db = client.db(process.env.MONGODB_DB_NAME || "smartdocs-ai")
   } catch (error) {
-    return errorResponse(error, "Unable to connect to MongoDB.", 500)
+    console.error("REGISTER ERROR: MongoDB connection failed.", error)
+    return errorResponse(error, "Unable to connect to the database.", 500)
   }
 
   try {
@@ -105,7 +106,14 @@ export async function POST(request: Request) {
       }
     }
 
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS)
+    let passwordHash
+    try {
+      passwordHash = await bcrypt.hash(password, SALT_ROUNDS)
+    } catch (error) {
+      console.error("REGISTER ERROR: Password hashing failed.", error)
+      return errorResponse(error, "Failed to process registration data.", 500)
+    }
+
     const now = new Date()
     const user = {
       fullName,
@@ -121,6 +129,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, message: "Account created successfully" }, { status: 201 })
   } catch (error) {
-    return errorResponse(error, "Unable to create account.", 500)
+    console.error("REGISTER ERROR: User creation or query failed.", error)
+    return errorResponse(error, "Unable to create account due to a database error.", 500)
   }
 }

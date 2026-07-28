@@ -1,87 +1,69 @@
-import mongoose, { Document, Model, Schema } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose"
 
 export type ActivityAction =
+  | "device_paired"
+  | "device_revoked"
   | "child_created"
   | "child_updated"
-  | "child_deleted"
-  | "schedule_created"
-  | "schedule_updated"
-  | "schedule_deleted"
   | "policy_created"
   | "policy_updated"
   | "policy_deleted"
-  | "unlock_requested"
+  | "schedule_created"
+  | "schedule_updated"
   | "unlock_approved"
   | "unlock_denied"
-  | "unlock_emergency"
+  | "emergency_approved"
+  | "emergency_denied"
   | "reward_created"
-  | "reward_completed"
-  | "reward_expired"
-  | "study_goal_updated"
-  | "streak_updated"
-  | "emergency_access_granted"
-  | "emergency_access_denied"
-  | "settings_updated"
-  | "device_pair_initiated"
-  | "device_paired"
-  | "device_revoked"
-  | "device_offline"
-  | "device_heartbeat"
-  | "device_locked"
-  | "device_unlocked"
-  | "app_locked"
-  | "app_unlocked"
-  | "app_limit_changed"
-  | "app_detected"
-  | "app_policy_updated"
-  | "temporary_unlock_granted"
-  | "temporary_unlock_expired";
+  | "reward_claimed"
+  | "study_goal_completed"
+  | "screen_time_limit_reached"
+  | "website_blocked"
+  | "app_blocked"
+  | "settings_changed"
+  | "family_created"
+
+export type ActivityActorType = "parent" | "child" | "device" | "system"
 
 export interface IActivityLog extends Document {
-  familyId: mongoose.Types.ObjectId;
-  childId?: mongoose.Types.ObjectId;
-  parentId: mongoose.Types.ObjectId;
-  action: ActivityAction;
-  details: string;
-  metadata?: Record<string, unknown>;
-  createdAt: Date;
+  familyId: mongoose.Types.ObjectId
+  childId?: mongoose.Types.ObjectId
+  actorType: ActivityActorType
+  actorId: string
+  action: ActivityAction
+  targetType?: string
+  targetId?: string
+  description: string
+  metadata?: Record<string, unknown>
+  ipAddress?: string
+  userAgent?: string
+  createdAt: Date
 }
 
 const ActivityLogSchema = new Schema<IActivityLog>(
   {
     familyId: { type: Schema.Types.ObjectId, ref: "Family", required: true, index: true },
-    childId: { type: Schema.Types.ObjectId, ref: "Child" },
-    parentId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
-    action: {
-      type: String,
-      enum: [
-        "child_created", "child_updated", "child_deleted",
-        "schedule_created", "schedule_updated", "schedule_deleted",
-        "policy_created", "policy_updated", "policy_deleted",
-        "unlock_requested", "unlock_approved", "unlock_denied", "unlock_emergency",
-        "reward_created", "reward_completed", "reward_expired",
-        "study_goal_updated", "streak_updated",
-        "emergency_access_granted", "emergency_access_denied",
-        "settings_updated",
-        "device_pair_initiated", "device_paired", "device_revoked", "device_offline",
-        "device_heartbeat", "device_locked", "device_unlocked",
-        "app_locked", "app_unlocked", "app_limit_changed", "app_detected", "app_policy_updated",
-        "temporary_unlock_granted", "temporary_unlock_expired",
-      ],
-      required: true,
-    },
-    details: { type: String, required: true },
+    childId: { type: Schema.Types.ObjectId, ref: "Child", index: true },
+    actorType: { type: String, enum: ["parent", "child", "device", "system"], required: true },
+    actorId: { type: String, required: true },
+    action: { type: String, required: true },
+    targetType: { type: String },
+    targetId: { type: String },
+    description: { type: String, required: true, trim: true },
     metadata: { type: Schema.Types.Mixed },
+    ipAddress: { type: String },
+    userAgent: { type: String },
+    createdAt: { type: Date, default: Date.now },
   },
-  { timestamps: { createdAt: true, updatedAt: false } }
-);
+  { timestamps: true }
+)
 
-ActivityLogSchema.index({ familyId: 1, createdAt: -1 });
-ActivityLogSchema.index({ childId: 1, createdAt: -1 });
+ActivityLogSchema.index({ familyId: 1, createdAt: -1 })
+ActivityLogSchema.index({ childId: 1, createdAt: -1 })
+ActivityLogSchema.index({ action: 1 })
 
-const ActivityLog: Model<IActivityLog> =
-  (mongoose.models.ActivityLog as Model<IActivityLog>) ||
-  mongoose.model<IActivityLog>("ActivityLog", ActivityLogSchema);
+const ActivityLog = (mongoose.models.ActivityLog as Model<IActivityLog>) ||
+  mongoose.model<IActivityLog>("ActivityLog", ActivityLogSchema)
 
-export default ActivityLog;
+export default ActivityLog
 

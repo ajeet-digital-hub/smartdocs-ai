@@ -4,7 +4,6 @@ const cookieParser = require('cookie-parser');
 const db = require('./db');
 require('dotenv').config();
 
-const authRoutes = require('./routes/auth');
 const servicesRoutes = require('./routes/services');
 const adminRoutes = require('./routes/admin');
 
@@ -26,8 +25,6 @@ app.get('/api/health', (req, res) => {
   res.json({ message: 'Server is running!' });
 });
 
-// Auth routes
-app.use('/api/auth', authRoutes);
 // Services routes
 app.use('/api/services', servicesRoutes);
 // Admin routes

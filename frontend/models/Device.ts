@@ -1,75 +1,71 @@
-import mongoose, { Document, Model, Schema } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose"
 
-export interface IInstalledApp {
-  packageName: string;
-  appName: string;
-  version: string;
-  isDetected: boolean;
-  lastDetected: Date;
-}
+export type DeviceType = "android" | "ios" | "chrome-extension" | "edge-extension" | "browser" | "smart-tv" | "android-tv" | "other"
+export type DeviceStatus = "online" | "offline" | "paused" | "revoked"
+export type ConnectionStatus = "connected" | "disconnected" | "pending" | "pairing"
+export type PolicySyncStatus = "synced" | "pending" | "failed" | "not-applicable"
 
 export interface IDevice extends Document {
-  childId: mongoose.Types.ObjectId;
-  familyId: mongoose.Types.ObjectId;
-  deviceId: string;
-  deviceName: string;
-  platform: "android" | "ios" | "web";
-  appVersion: string;
-  status: "online" | "offline" | "pending";
-  lastSeen: Date;
-  deviceToken: string;
-  fcmToken?: string;
-  publicKey?: string;
-  installedApps: IInstalledApp[];
-  createdAt: Date;
-  updatedAt: Date;
+  familyId: mongoose.Types.ObjectId
+  childId?: mongoose.Types.ObjectId
+  name: string
+  deviceType: DeviceType
+  deviceToken?: string
+  deviceTokenHash?: string
+  publicKey?: string
+  status: DeviceStatus
+  connectionStatus: ConnectionStatus
+  policySyncStatus: PolicySyncStatus
+  lastSeen?: Date
+  lastIpAddress?: string
+  userAgent?: string
+  firmwareVersion?: string
+  capabilities: string[]
+  pairedAt?: Date
+  revokedAt?: Date
+  createdAt: Date
+  updatedAt: Date
 }
-
-const InstalledAppSchema = new Schema<IInstalledApp>(
-  {
-    packageName: { type: String, required: true },
-    appName: { type: String, required: true },
-    version: { type: String, required: true },
-    isDetected: { type: Boolean, default: true },
-    lastDetected: { type: Date, default: Date.now },
-  },
-  { _id: false }
-);
 
 const DeviceSchema = new Schema<IDevice>(
   {
-    childId: { type: Schema.Types.ObjectId, ref: "Child", required: true, index: true },
     familyId: { type: Schema.Types.ObjectId, ref: "Family", required: true, index: true },
-    deviceId: { type: String, required: true },
-    deviceName: { type: String, required: true, trim: true },
-    platform: {
+    childId: { type: Schema.Types.ObjectId, ref: "Child", index: true },
+    name: { type: String, required: true, trim: true },
+    deviceType: {
       type: String,
-      enum: ["android", "ios", "web"],
+      enum: ["android", "ios", "chrome-extension", "edge-extension", "browser", "smart-tv", "android-tv", "other"],
       required: true,
     },
-    appVersion: { type: String, default: "1.0.0" },
-    status: {
+    deviceToken: { type: String, select: false },
+    deviceTokenHash: { type: String, select: false },
+    publicKey: { type: String, select: false },
+    status: { type: String, enum: ["online", "offline", "paused", "revoked"], default: "offline" },
+    connectionStatus: {
       type: String,
-      enum: ["online", "offline", "pending"],
-      default: "pending",
+      enum: ["connected", "disconnected", "pending", "pairing"],
+      default: "disconnected",
     },
-    lastSeen: { type: Date, default: Date.now },
-    deviceToken: { type: String, required: true, unique: true },
-    fcmToken: { type: String },
-    publicKey: { type: String },
-    installedApps: [InstalledAppSchema],
+    policySyncStatus: {
+      type: String,
+      enum: ["synced", "pending", "failed", "not-applicable"],
+      default: "not-applicable",
+    },
+    lastSeen: { type: Date },
+    lastIpAddress: { type: String },
+    userAgent: { type: String },
+    firmwareVersion: { type: String },
+    capabilities: [{ type: String }],
+    pairedAt: { type: Date },
+    revokedAt: { type: Date },
   },
   { timestamps: true }
-);
+)
 
-DeviceSchema.index({ childId: 1, platform: 1 });
-DeviceSchema.index({ familyId: 1, status: 1 });
-DeviceSchema.index({ deviceToken: 1 }, { unique: true });
-DeviceSchema.index({ "installedApps.packageName": 1 });
+DeviceSchema.index({ familyId: 1, deviceType: 1 })
+DeviceSchema.index({ deviceTokenHash: 1 }, { sparse: true })
 
-const Device: Model<IDevice> =
-  (mongoose.models.Device as Model<IDevice>) ||
-  mongoose.model<IDevice>("Device", DeviceSchema);
+const Device = (mongoose.models.Device as Model<IDevice>) || mongoose.model<IDevice>("Device", DeviceSchema)
 
-export default Device;
+export default Device
 
