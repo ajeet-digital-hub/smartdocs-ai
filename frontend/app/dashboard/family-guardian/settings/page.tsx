@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import * as familyGuardianApi from "@/lib/family-guardian-api";
 
 export default function FamilySettingsPage() {
   const { data: session, status } = useSession();
@@ -15,8 +16,7 @@ export default function FamilySettingsPage() {
 
   async function fetchFamily() {
     try {
-      const res = await fetch("/api/family");
-      const data = await res.json();
+      const data = await familyGuardianApi.getFamily();
       if (data.ok) {
         setFamilyName(data.family.name || "My Family");
       }
@@ -44,13 +44,8 @@ export default function FamilySettingsPage() {
     }
     setSaving(true);
     try {
-      const res = await fetch("/api/family", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: familyName.trim() }),
-      });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || "Failed to save");
+      const res = await familyGuardianApi.updateFamily({ familyName: familyName.trim() });
+      if (!res.ok) throw new Error(res.error || "Failed to save");
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {

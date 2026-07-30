@@ -342,6 +342,60 @@ export default function Home() {
         </div>
       </section>
 
+{/* ───── AI WORKSPACE ENTRY ───── */}
+      <section className="relative overflow-hidden px-4 sm:px-6 py-16 sm:py-24 bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-40 -right-20 h-80 w-80 rounded-full bg-purple-500/15 blur-3xl" />
+          <div className="absolute -bottom-40 -left-20 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
+        </div>
+        <div className="relative mx-auto max-w-5xl text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-purple-200">
+            <span>🤖</span>
+            AI-Powered Workspace
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white">
+            Ask SmartDocs AI Anything
+          </h2>
+          <p className="mt-3 max-w-2xl mx-auto text-slate-300 text-sm sm:text-base">
+            Chat with our AI assistant to create documents, edit images, analyze PDFs, 
+            and get answers instantly. Your intelligent workspace is ready.
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              href="/ai-tools"
+              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-purple-500/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/50 cursor-pointer"
+            >
+              Start with AI
+              <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
+            </Link>
+            <Link
+              href="/pricing"
+              className="group inline-flex items-center gap-2 rounded-xl border border-white/20 px-8 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/40 cursor-pointer"
+            >
+              View Plans & Pricing
+            </Link>
+          </div>
+          {/* Feature preview */}
+          <div className="mt-10 grid gap-4 sm:grid-cols-3 max-w-3xl mx-auto">
+            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-left">
+              <span className="text-lg">💬</span>
+              <p className="mt-2 text-sm font-medium text-white">Chat & Create</p>
+              <p className="text-xs text-slate-400 mt-1">Natural language document creation</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-left">
+              <span className="text-lg">📄</span>
+              <p className="mt-2 text-sm font-medium text-white">Document AI</p>
+              <p className="text-xs text-slate-400 mt-1">Analyze, summarize, and extract</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-left">
+              <span className="text-lg">📎</span>
+              <p className="mt-2 text-sm font-medium text-white">File Upload</p>
+              <p className="text-xs text-slate-400 mt-1">Upload and process documents</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ───── EVERYTHING YOU NEED ───── */}
       <section className="relative bg-slate-50 dark:bg-slate-900/50 px-4 sm:px-6 py-20 sm:py-28">
         <div className="mx-auto max-w-7xl">

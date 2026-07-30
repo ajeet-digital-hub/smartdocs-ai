@@ -1,71 +1,64 @@
-import mongoose, { Document, Model, Schema } from "mongoose"
+import mongoose, { Schema, Document } from "mongoose";
 
-export type DeviceType = "android" | "ios" | "chrome-extension" | "edge-extension" | "browser" | "smart-tv" | "android-tv" | "other"
-export type DeviceStatus = "online" | "offline" | "paused" | "revoked"
-export type ConnectionStatus = "connected" | "disconnected" | "pending" | "pairing"
-export type PolicySyncStatus = "synced" | "pending" | "failed" | "not-applicable"
-
-export interface IDevice extends Document {
-  familyId: mongoose.Types.ObjectId
-  childId?: mongoose.Types.ObjectId
-  name: string
-  deviceType: DeviceType
-  deviceToken?: string
-  deviceTokenHash?: string
-  publicKey?: string
-  status: DeviceStatus
-  connectionStatus: ConnectionStatus
-  policySyncStatus: PolicySyncStatus
-  lastSeen?: Date
-  lastIpAddress?: string
-  userAgent?: string
-  firmwareVersion?: string
-  capabilities: string[]
-  pairedAt?: Date
-  revokedAt?: Date
-  createdAt: Date
-  updatedAt: Date
+export interface IInstalledApp {
+  packageName: string;
+  appName: string;
+  version: string;
+  isDetected: boolean;
+  lastDetected: Date;
 }
 
-const DeviceSchema = new Schema<IDevice>(
+export interface IDevice extends Document {
+  childId: mongoose.Types.ObjectId;
+  familyId: mongoose.Types.ObjectId;
+  deviceId: string; // Unique identifier from the device itself (e.g., Android ID)
+  deviceName: string;
+  platform: "android" | "ios" | "web" | "browser-extension";
+  osVersion?: string;
+  deviceInfo?: string; // e.g., "Samsung Galaxy S23"
+  appVersion?: string; // Version of the Family Guardian app on the device
+  status: "online" | "offline" | "pending" | "revoked";
+  lastSeen: Date;
+  deviceToken: string; // Secure random token for API auth
+  fcmToken?: string; // Firebase Cloud Messaging token for push notifications
+  batteryLevel?: number; // Last reported battery level
+  installedApps: IInstalledApp[];
+  lastSyncedPolicyVersion: number; // To track policy updates for device sync
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const InstalledAppSchema: Schema = new Schema({
+  packageName: { type: String, required: true },
+  appName: { type: String, required: true },
+  version: { type: String },
+  isDetected: { type: Boolean, default: true },
+  lastDetected: { type: Date, default: Date.now },
+}, { _id: false });
+
+const DeviceSchema: Schema = new Schema(
   {
-    familyId: { type: Schema.Types.ObjectId, ref: "Family", required: true, index: true },
-    childId: { type: Schema.Types.ObjectId, ref: "Child", index: true },
-    name: { type: String, required: true, trim: true },
-    deviceType: {
-      type: String,
-      enum: ["android", "ios", "chrome-extension", "edge-extension", "browser", "smart-tv", "android-tv", "other"],
-      required: true,
-    },
-    deviceToken: { type: String, select: false },
-    deviceTokenHash: { type: String, select: false },
-    publicKey: { type: String, select: false },
-    status: { type: String, enum: ["online", "offline", "paused", "revoked"], default: "offline" },
-    connectionStatus: {
-      type: String,
-      enum: ["connected", "disconnected", "pending", "pairing"],
-      default: "disconnected",
-    },
-    policySyncStatus: {
-      type: String,
-      enum: ["synced", "pending", "failed", "not-applicable"],
-      default: "not-applicable",
-    },
-    lastSeen: { type: Date },
-    lastIpAddress: { type: String },
-    userAgent: { type: String },
-    firmwareVersion: { type: String },
-    capabilities: [{ type: String }],
-    pairedAt: { type: Date },
-    revokedAt: { type: Date },
+    childId: { type: Schema.Types.ObjectId, ref: "Child", required: true },
+    familyId: { type: Schema.Types.ObjectId, ref: "Family", required: true },
+    deviceId: { type: String, required: true },
+    deviceName: { type: String, required: true },
+    platform: { type: String, enum: ["android", "ios", "web", "browser-extension"], required: true },
+    osVersion: { type: String },
+    deviceInfo: { type: String },
+    appVersion: { type: String },
+    status: { type: String, enum: ["online", "offline", "pending", "revoked"], default: "pending" },
+    lastSeen: { type: Date, default: Date.now },
+    deviceToken: { type: String, required: true, unique: true },
+    fcmToken: { type: String },
+    batteryLevel: { type: Number, min: 0, max: 100 },
+    lastSyncedPolicyVersion: { type: Number, default: 0 },
+    installedApps: [InstalledAppSchema],
   },
   { timestamps: true }
-)
+);
 
-DeviceSchema.index({ familyId: 1, deviceType: 1 })
-DeviceSchema.index({ deviceTokenHash: 1 }, { sparse: true })
+DeviceSchema.index({ childId: 1, deviceId: 1 }, { unique: true });
+DeviceSchema.index({ deviceToken: 1 });
 
-const Device = (mongoose.models.Device as Model<IDevice>) || mongoose.model<IDevice>("Device", DeviceSchema)
-
-export default Device
-
+export default (mongoose.models.Device as mongoose.Model<IDevice>) ||
+  mongoose.model<IDevice>("Device", DeviceSchema);

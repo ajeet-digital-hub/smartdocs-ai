@@ -22,6 +22,7 @@ export interface ISchedule extends Document {
   allowedApps: string[]
   sleepMode: boolean
   emergencyAccessEnabled: boolean
+  policyVersion: number; // Incremented on each change for device sync
   createdAt: Date
   updatedAt: Date
 }
@@ -51,6 +52,7 @@ const ScheduleSchema = new Schema<ISchedule>(
     allowedApps: [{ type: String }],
     sleepMode: { type: Boolean, default: false },
     emergencyAccessEnabled: { type: Boolean, default: true },
+    policyVersion: { type: Number, default: 1 },
   },
   { timestamps: true }
 )
@@ -61,4 +63,3 @@ const Schedule = (mongoose.models.Schedule as Model<ISchedule>) ||
   mongoose.model<ISchedule>("Schedule", ScheduleSchema)
 
 export default Schedule
-

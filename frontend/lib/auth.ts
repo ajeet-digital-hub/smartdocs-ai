@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt"
-import { getMongoClient } from "@/lib/mongodb"
+import dbConnect from "@/lib/dbConnect";
+import User from "@/models/User"
 
 export type AuthenticatedUser = {
   id: string
@@ -17,11 +18,10 @@ export async function authenticateCredentials(emailInput: unknown, passwordInput
   }
 
   try {
-    const client = await getMongoClient()
-    const db = client.db(process.env.MONGODB_DB_NAME || "smartdocs-ai")
-    const user = await db.collection("users").findOne(
+    await dbConnect()
+    const user = await User.findOne(
       { email },
-      { projection: { fullName: 1, email: 1, phoneNumber: 1, passwordHash: 1 } },
+      "fullName email phoneNumber passwordHash"
     )
 
     if (!user) {

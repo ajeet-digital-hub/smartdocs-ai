@@ -7,10 +7,10 @@ import { useSession, signOut } from "next-auth/react";
 
 const navLinks = [
   { label: "Home", href: "/" },
+  { label: "AI Workspace", href: "/ai-tools" },
   { label: "Services", href: "/services" },
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "AI Tools", href: "/ai-tools" },
   { label: "Pricing", href: "/pricing" },
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Family Guardian", href: "/dashboard/family-guardian" },
 ];
 
@@ -168,7 +168,7 @@ export default function Navbar() {
                     </p>
                   </div>
 
-                  {/* Menu items */}
+{/* Menu items */}
                   <div className="py-1">
                     <Link
                       href="/dashboard"
@@ -179,6 +179,22 @@ export default function Navbar() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                       </svg>
                       Dashboard
+                    </Link>
+                    <Link
+                      href="/ai-tools"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                      <span className="text-lg">🤖</span>
+                      AI Workspace
+                    </Link>
+                    <Link
+                      href="/dashboard/subscription"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                      <span className="text-lg">💳</span>
+                      Subscription & Billing
                     </Link>
                     <Link
                       href="/dashboard/family-guardian"

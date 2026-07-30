@@ -4,15 +4,25 @@
  */
 
 import { apiFetch } from "./api"
+import { ActivityAction, ActivitySeverity } from "@/models/ActivityLog";
+import { IFamily } from "@/models/Family";
+import { IChild } from "@/models/Child";
+import { IDevice } from "@/models/Device";
+import { IInstalledApp } from "@/models/Device";
+import { IAppPolicy, IScheduleBlock } from "@/models/AppPolicy";
+import { IWebsitePolicy } from "@/models/WebsitePolicy";
+import { ISchedule } from "@/models/Schedule";
+import { IUnlockRequest } from "@/models/UnlockRequest";
+import { INotification } from "@/models/Notification";
 
 // ─── Family ───
 
-export async function getFamily() {
-  return apiFetch<{ ok: boolean; family: any }>("/family-guardian/family")
+export async function getFamily(): Promise<{ ok: boolean; family: IFamily }> {
+  return apiFetch<{ ok: boolean; family: IFamily }>("/api/family-guardian/family", { params: { populateSubscription: 'true' } })
 }
 
-export async function updateFamily(data: { familyName?: string }) {
-  return apiFetch<{ ok: boolean; family: any }>("/family-guardian/family", {
+export async function updateFamily(data: { familyName?: string }): Promise<{ ok: boolean; family: IFamily }> {
+  return apiFetch<{ ok: boolean; family: IFamily }>("/api/family-guardian/family", {
     method: "PUT",
     body: JSON.stringify(data),
   })
@@ -21,7 +31,11 @@ export async function updateFamily(data: { familyName?: string }) {
 // ─── Children ───
 
 export async function getChildren() {
-  return apiFetch<{ ok: boolean; children: any[] }>("/family-guardian/children")
+  return apiFetch<{ ok: boolean; children: IChild[] }>("/api/family-guardian/children");
+}
+
+export async function getChild(childId: string) {
+  return apiFetch<{ ok: boolean; child: IChild }>(`/api/family-guardian/children/${childId}`);
 }
 
 export async function createChild(data: {
@@ -29,34 +43,34 @@ export async function createChild(data: {
   age: number
   dateOfBirth?: string
   avatar?: string
-}) {
-  return apiFetch<{ ok: boolean; child: any }>("/family-guardian/children", {
-    method: "POST",
+}) : Promise<{ ok: boolean; child: IChild }> {
+  return apiFetch<{ ok: boolean; child: any }>("/api/family-guardian/children", {
+    method: "POST", 
     body: JSON.stringify(data),
   })
 }
 
 export async function updateChild(childId: string, data: any) {
-  return apiFetch<{ ok: boolean; child: any }>(`/family-guardian/children/${childId}`, {
+  return apiFetch<{ ok: boolean; child: IChild }>(`/api/family-guardian/children/${childId}`, {
     method: "PUT",
     body: JSON.stringify(data),
   })
 }
 
 export async function deleteChild(childId: string) {
-  return apiFetch<{ ok: boolean; message: string }>(`/family-guardian/children/${childId}`, {
+  return apiFetch<{ ok: boolean; message: string }>(`/api/family-guardian/children/${childId}`, {
     method: "DELETE",
   })
 }
 
 // ─── Devices ───
 
-export async function getDevices() {
-  return apiFetch<{ ok: boolean; devices: any[] }>("/family-guardian/devices")
+export async function getDevices(params?: { childId?: string }) {
+  return apiFetch<{ ok: boolean; devices: IDevice[] }>("/api/family-guardian/devices", { params })
 }
 
 export async function getDevice(deviceId: string) {
-  return apiFetch<{ ok: boolean; device: any }>(`/family-guardian/devices/${deviceId}`)
+  return apiFetch<{ ok: boolean; device: IDevice }>(`/api/family-guardian/devices/${deviceId}`)
 }
 
 export async function initiatePairing(data: {
@@ -65,27 +79,27 @@ export async function initiatePairing(data: {
   deviceName: string
 }) {
   return apiFetch<{ ok: boolean; pairingCode: string; pairingToken: string; expiresAt: string }>(
-    "/family-guardian/devices/pair",
+    "/api/family-guardian/devices/pair",
     { method: "POST", body: JSON.stringify(data) }
   )
 }
 
 export async function completePairing(pairingCode: string, deviceToken: string) {
-  return apiFetch<{ ok: boolean; device: any }>("/family-guardian/devices/pair/complete", {
+  return apiFetch<{ ok: boolean; device: IDevice }>("/api/family-guardian/devices/pair/complete", {
     method: "POST",
     body: JSON.stringify({ pairingCode, deviceToken }),
   })
 }
 
 export async function renameDevice(deviceId: string, name: string) {
-  return apiFetch<{ ok: boolean; device: any }>(`/family-guardian/devices/${deviceId}`, {
+  return apiFetch<{ ok: boolean; device: IDevice }>(`/api/family-guardian/devices/${deviceId}`, {
     method: "PUT",
     body: JSON.stringify({ name }),
   })
 }
 
 export async function assignChildToDevice(deviceId: string, childId: string) {
-  return apiFetch<{ ok: boolean; device: any }>(`/family-guardian/devices/${deviceId}/assign`, {
+  return apiFetch<{ ok: boolean; device: IDevice }>(`/api/family-guardian/devices/${deviceId}/assign`, {
     method: "POST",
     body: JSON.stringify({ childId }),
   })
@@ -93,60 +107,85 @@ export async function assignChildToDevice(deviceId: string, childId: string) {
 
 export async function syncDevicePolicies(deviceId: string) {
   return apiFetch<{ ok: boolean; message: string }>(
-    `/family-guardian/devices/${deviceId}/sync`,
+    `/api/family-guardian/devices/${deviceId}/sync`,
     { method: "POST" }
   )
 }
 
 export async function revokeDevice(deviceId: string) {
   return apiFetch<{ ok: boolean; message: string }>(
-    `/family-guardian/devices/${deviceId}/revoke`,
+    `/api/family-guardian/devices/${deviceId}/revoke`,
     { method: "POST" }
   )
 }
 
+export async function registerDevice(data: {
+  childId: string
+  deviceName: string
+  platform: "android" | "ios" | "web" | "browser-extension"
+  osVersion?: string
+  deviceInfo?: string
+}) {
+  return apiFetch<{ success: boolean; deviceId: string; deviceToken: string; status: string }>(
+    "/api/family-guardian/devices/register",
+    { method: "POST", body: JSON.stringify(data) }
+  )
+}
+
+export async function reportActivity(data: {
+  appName?: string;
+  appId?: string;
+  domain?: string;
+  usageDuration?: number; // in seconds
+  action: ActivityAction;
+  details?: string;
+  timestamp?: Date;
+  severity?: ActivitySeverity;
+}) {
+  return apiFetch<{ success: boolean; message: string }>("/api/family-guardian/activity", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function reportInstalledApps(data: {
+  installedApps: IInstalledApp[];
+}) {
+  return apiFetch<{ ok: boolean; message: string }>("/api/family-guardian/device/apps/sync", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function sendHeartbeat(data: {
+  status: "online" | "offline";
+  batteryLevel: number;
+  screenOn: boolean;
+  foregroundApp?: string;
+  lastSyncedPolicyVersion: number;
+  installedApps: IInstalledApp[]; // Full list of installed apps
+}) {
+  return apiFetch<{ ok: boolean; status: string; lastSeen: string; policyUpdatesRequired: boolean; latestPolicyVersion: number; serverTime: string; deviceId: string; }>(
+    "/api/family-guardian/device-heartbeat", { method: "POST", body: JSON.stringify(data) });
+}
+
 // ─── Policies ───
 
-export async function getWebsitePolicies(params?: { childId?: string }) {
-  return apiFetch<{ ok: boolean; policies: any[] }>("/family-guardian/policies/websites", {
+export async function getAppPolicies(params?: { childId?: string }): Promise<{ ok: boolean; policies: IAppPolicy[] }> {
+  return apiFetch<{ ok: boolean; policies: IAppPolicy[] }>("/api/family-guardian/policies", {
     params,
   })
 }
 
-export async function createWebsitePolicy(data: any) {
-  return apiFetch<{ ok: boolean; policy: any }>("/family-guardian/policies/websites", {
+export async function createAppPolicy(data: Partial<IAppPolicy>): Promise<{ ok: boolean; policy: IAppPolicy }> {
+  return apiFetch<{ ok: boolean; policy: IAppPolicy }>("/api/family-guardian/policies", {
     method: "POST",
     body: JSON.stringify(data),
   })
 }
 
-export async function updateWebsitePolicy(policyId: string, data: any) {
-  return apiFetch<{ ok: boolean; policy: any }>(`/family-guardian/policies/websites/${policyId}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  })
-}
-
-export async function deleteWebsitePolicy(policyId: string) {
-  return apiFetch<{ ok: boolean; message: string }>(
-    `/family-guardian/policies/websites/${policyId}`,
-    { method: "DELETE" }
-  )
-}
-
-export async function getAppPolicies(params?: { childId?: string }) {
-  return apiFetch<{ ok: boolean; policies: any[] }>("/family-guardian/policies/apps", { params })
-}
-
-export async function createAppPolicy(data: any) {
-  return apiFetch<{ ok: boolean; policy: any }>("/family-guardian/policies/apps", {
-    method: "POST",
-    body: JSON.stringify(data),
-  })
-}
-
-export async function updateAppPolicy(policyId: string, data: any) {
-  return apiFetch<{ ok: boolean; policy: any }>(`/family-guardian/policies/apps/${policyId}`, {
+export async function updateAppPolicy(policyId: string, data: Partial<IAppPolicy>): Promise<{ ok: boolean; policy: IAppPolicy }> {
+  return apiFetch<{ ok: boolean; policy: IAppPolicy }>(`/api/family-guardian/policies/${policyId}`, {
     method: "PUT",
     body: JSON.stringify(data),
   })
@@ -154,26 +193,60 @@ export async function updateAppPolicy(policyId: string, data: any) {
 
 export async function deleteAppPolicy(policyId: string) {
   return apiFetch<{ ok: boolean; message: string }>(
-    `/family-guardian/policies/apps/${policyId}`,
+    `/api/family-guardian/policies/${policyId}`,
     { method: "DELETE" }
   )
 }
 
-// ─── Schedules ───
+// ─── Website Policies ───
 
-export async function getSchedules(params?: { childId?: string }) {
-  return apiFetch<{ ok: boolean; schedules: any[] }>("/family-guardian/schedules", { params })
+export async function getWebsitePolicies(params?: { childId?: string }): Promise<{ ok: boolean; policies: IWebsitePolicy[] }> {
+  return apiFetch<{ ok: boolean; policies: IWebsitePolicy[] }>("/api/family-guardian/policies/websites", {
+    params,
+  })
 }
 
-export async function createSchedule(data: any) {
-  return apiFetch<{ ok: boolean; schedule: any }>("/family-guardian/schedules", {
+export async function createWebsitePolicy(data: Partial<IWebsitePolicy>): Promise<{ ok: boolean; policy: IWebsitePolicy }> {
+  return apiFetch<{ ok: boolean; policy: IWebsitePolicy }>("/api/family-guardian/policies/websites", {
     method: "POST",
     body: JSON.stringify(data),
   })
 }
 
-export async function updateSchedule(scheduleId: string, data: any) {
-  return apiFetch<{ ok: boolean; schedule: any }>(`/family-guardian/schedules/${scheduleId}`, {
+export async function updateWebsitePolicy(policyId: string, data: Partial<IWebsitePolicy>): Promise<{ ok: boolean; policy: IWebsitePolicy }> {
+  return apiFetch<{ ok: boolean; policy: IWebsitePolicy }>(`/api/family-guardian/policies/websites/${policyId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  })
+}
+
+export async function deleteWebsitePolicy(policyId: string) {
+  return apiFetch<{ ok: boolean; message: string }>(
+    `/api/family-guardian/policies/websites/${policyId}`,
+    { method: "DELETE" }
+  )
+}
+
+// --- Application Catalog ---
+export async function getAppCatalog(): Promise<{ success: boolean; apps: { appId: string; name: string; packageName: string | null; category: string; icon: string; defaultBlocked: boolean; }[] }> {
+  return apiFetch<{ success: boolean; apps: any[] }>("/api/family-guardian/apps"); // apps are AppCatalogEntry
+}
+
+// ─── Schedules ───
+
+export async function getSchedules(params?: { childId?: string }): Promise<{ ok: boolean; schedules: ISchedule[] }> {
+  return apiFetch<{ ok: boolean; schedules: ISchedule[] }>("/api/family-guardian/schedules", { params })
+}
+
+export async function createSchedule(data: Partial<ISchedule>): Promise<{ ok: boolean; schedule: ISchedule }> {
+  return apiFetch<{ ok: boolean; schedule: ISchedule }>("/api/family-guardian/schedules", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+}
+
+export async function updateSchedule(scheduleId: string, data: Partial<ISchedule>): Promise<{ ok: boolean; schedule: ISchedule }> {
+  return apiFetch<{ ok: boolean; schedule: ISchedule }>(`/api/family-guardian/schedules/${scheduleId}`, {
     method: "PUT",
     body: JSON.stringify(data),
   })
@@ -181,19 +254,19 @@ export async function updateSchedule(scheduleId: string, data: any) {
 
 export async function deleteSchedule(scheduleId: string) {
   return apiFetch<{ ok: boolean; message: string }>(
-    `/family-guardian/schedules/${scheduleId}`,
+    `/api/family-guardian/schedules/${scheduleId}`,
     { method: "DELETE" }
   )
 }
 
 // ─── Screen Time ───
 
-export async function getScreenTimeLimits(params?: { childId?: string }) {
-  return apiFetch<{ ok: boolean; limits: any[] }>("/family-guardian/screen-time", { params })
+export async function getScreenTimeLimits(params?: { childId?: string }): Promise<{ ok: boolean; limits: any[] }> { // TODO: Type limits
+  return apiFetch<{ ok: boolean; limits: any[] }>("/api/family-guardian/screen-time", { params }) // TODO: Type limits
 }
 
 export async function updateScreenTimeLimit(childId: string, data: { dailyLimitMinutes: number }) {
-  return apiFetch<{ ok: boolean; limit: any }>(`/family-guardian/screen-time/${childId}`, {
+  return apiFetch<{ ok: boolean; limit: any }>(`/api/family-guardian/screen-time/${childId}`, { // TODO: Type limit
     method: "PUT",
     body: JSON.stringify(data),
   })
@@ -201,19 +274,19 @@ export async function updateScreenTimeLimit(childId: string, data: { dailyLimitM
 
 // ─── Study Goals ───
 
-export async function getStudyGoals(params?: { childId?: string }) {
-  return apiFetch<{ ok: boolean; goals: any[] }>("/family-guardian/study-goals", { params })
+export async function getStudyGoals(params?: { childId?: string }): Promise<{ ok: boolean; goals: any[] }> { // TODO: Type goals
+  return apiFetch<{ ok: boolean; goals: any[] }>("/family-guardian/study-goals", { params }) // TODO: Type goals
 }
 
-export async function createStudyGoal(data: any) {
-  return apiFetch<{ ok: boolean; goal: any }>("/family-guardian/study-goals", {
+export async function createStudyGoal(data: any): Promise<{ ok: boolean; goal: any }> { // TODO: Type goal
+  return apiFetch<{ ok: boolean; goal: any }>("/family-guardian/study-goals", { // TODO: Type goal
     method: "POST",
     body: JSON.stringify(data),
   })
 }
 
-export async function updateStudyGoal(goalId: string, data: any) {
-  return apiFetch<{ ok: boolean; goal: any }>(`/family-guardian/study-goals/${goalId}`, {
+export async function updateStudyGoal(goalId: string, data: any): Promise<{ ok: boolean; goal: any }> { // TODO: Type goal
+  return apiFetch<{ ok: boolean; goal: any }>(`/family-guardian/study-goals/${goalId}`, { // TODO: Type goal
     method: "PUT",
     body: JSON.stringify(data),
   })
@@ -221,27 +294,27 @@ export async function updateStudyGoal(goalId: string, data: any) {
 
 // ─── Rewards ───
 
-export async function getRewards(params?: { childId?: string }) {
-  return apiFetch<{ ok: boolean; rewards: any[] }>("/family-guardian/rewards", { params })
+export async function getRewards(params?: { childId?: string }): Promise<{ ok: boolean; rewards: any[] }> { // TODO: Type rewards
+  return apiFetch<{ ok: boolean; rewards: any[] }>("/family-guardian/rewards", { params }) // TODO: Type rewards
 }
 
-export async function createReward(data: any) {
-  return apiFetch<{ ok: boolean; reward: any }>("/family-guardian/rewards", {
+export async function createReward(data: any): Promise<{ ok: boolean; reward: any }> { // TODO: Type reward
+  return apiFetch<{ ok: boolean; reward: any }>("/family-guardian/rewards", { // TODO: Type reward
     method: "POST",
     body: JSON.stringify(data),
   })
 }
 
 export async function redeemReward(rewardId: string) {
-  return apiFetch<{ ok: boolean; reward: any }>(`/family-guardian/rewards/${rewardId}/redeem`, {
+  return apiFetch<{ ok: boolean; reward: any }>(`/api/family-guardian/rewards/${rewardId}/redeem`, { // TODO: Type reward
     method: "POST",
   })
 }
 
 // ─── Unlock Requests ───
 
-export async function getUnlockRequests(params?: { status?: string }) {
-  return apiFetch<{ ok: boolean; requests: any[] }>("/family-guardian/unlock-requests", {
+export async function getUnlockRequests(params?: { status?: string }): Promise<{ ok: boolean; requests: IUnlockRequest[] }> {
+  return apiFetch<{ ok: boolean; requests: IUnlockRequest[] }>("/api/family-guardian/unlock-requests", {
     params,
   })
 }
@@ -250,9 +323,9 @@ export async function respondToUnlockRequest(
   requestId: string,
   action: "approve" | "deny",
   durationMinutes?: number
-) {
-  return apiFetch<{ ok: boolean; request: any }>(
-    `/family-guardian/unlock-requests/${requestId}`,
+) : Promise<{ success: boolean; request: IUnlockRequest }> {
+  return apiFetch<{ success: boolean; request: IUnlockRequest }>(
+    `/api/family-guardian/unlock-requests/${requestId}`,
     {
       method: "POST",
       body: JSON.stringify({ action, durationMinutes }),
@@ -262,17 +335,16 @@ export async function respondToUnlockRequest(
 
 // ─── Emergency Access ───
 
-export async function getEmergencyRequests() {
-  return apiFetch<{ ok: boolean; requests: any[] }>("/family-guardian/emergency-access")
+export async function getEmergencyRequests(): Promise<{ ok: boolean; requests: any[] }> { // TODO: Type requests
+  return apiFetch<{ ok: boolean; requests: any[] }>("/api/family-guardian/emergency-access") // TODO: Type requests
 }
 
 export async function respondToEmergencyRequest(
   requestId: string,
   action: "approve" | "deny",
   durationMinutes?: number
-) {
-  return apiFetch<{ ok: boolean; request: any }>(
-    `/family-guardian/emergency-access/${requestId}`,
+) : Promise<{ success: boolean; request: any }> { // TODO: Type request
+  return apiFetch<{ success: boolean; request: any }>(`/api/family-guardian/emergency-access/${requestId}`,
     {
       method: "POST",
       body: JSON.stringify({ action, durationMinutes }),
@@ -286,36 +358,36 @@ export async function getActivityLogs(params?: {
   childId?: string
   limit?: string
   offset?: string
-}) {
-  return apiFetch<{ ok: boolean; logs: any[]; total: number }>(
-    "/family-guardian/activity-logs",
+}) : Promise<{ ok: boolean; logs: any[]; total: number }> { // TODO: Type logs
+  return apiFetch<{ ok: boolean; logs: any[]; total: number }>( // TODO: Type logs
+    "/api/family-guardian/activity-logs",
     { params }
   )
 }
 
 // ─── Analytics ───
 
-export async function getAnalytics(params?: { childId?: string; period?: string }) {
-  return apiFetch<{ ok: boolean; analytics: any }>("/family-guardian/analytics", { params })
+export async function getAnalytics(childId: string, params?: { period?: string }): Promise<{ ok: boolean; analytics: any }> { // TODO: Type analytics
+  return apiFetch<{ ok: boolean; analytics: any }>(`/api/family-guardian/analytics/${childId}`, { params }) // TODO: Type analytics
 }
 
 // ─── Notifications ───
 
-export async function getNotifications(params?: { unreadOnly?: string }) {
-  return apiFetch<{ ok: boolean; notifications: any[] }>("/family-guardian/notifications", {
+export async function getNotifications(params?: { unreadOnly?: string }): Promise<{ ok: boolean; notifications: INotification[]; unreadCount: number }> {
+  return apiFetch<{ ok: boolean; notifications: INotification[]; unreadCount: number }>("/api/family-guardian/notifications", {
     params,
   })
 }
 
 export async function markNotificationRead(notificationId: string) {
-  return apiFetch<{ ok: boolean; notification: any }>(
-    `/family-guardian/notifications/${notificationId}`,
+  return apiFetch<{ ok: boolean; notification: INotification }>(
+    `/api/family-guardian/notifications/${notificationId}`,
     { method: "PUT" }
   )
 }
 
 export async function markAllNotificationsRead() {
-  return apiFetch<{ ok: boolean; message: string }>("/family-guardian/notifications/read-all", {
+  return apiFetch<{ ok: boolean; message: string }>("/api/family-guardian/notifications/read-all", {
     method: "POST",
   })
 }

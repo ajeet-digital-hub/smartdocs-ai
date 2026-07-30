@@ -12,6 +12,7 @@
     "@sendgrid/mail": "^8.1.6",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.4.2",
+    "framer-motion": "^12.43.0",
     "lucide-react": "^1.25.0",
     "mongodb": "^7.5.0",
     "mongoose": "^9.8.0",
@@ -31,6 +32,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }

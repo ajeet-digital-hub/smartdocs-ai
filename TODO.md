@@ -1,27 +1,40 @@
-# Family Guardian Phase 2.5 - Implementation Progress
+# UI & Product Discoverability Fix - Implementation Plan
 
-## ✅ Backend Models
-- [x] `frontend/models/Device.ts` - Standalone Device model
-- [x] `frontend/models/AppPolicy.ts` - App Policy model (separate from WebsitePolicy)
-- [x] `frontend/data/application-catalog.ts` - Static application catalog
+## Steps:
 
-## ✅ API Routes
-- [x] `frontend/app/api/family-guardian/pair-device/route.ts` - Enhanced with QR data
-- [x] `frontend/app/api/family-guardian/device-auth/route.ts` - NEW: Device authentication
-- [x] `frontend/app/api/family-guardian/devices/route.ts` - Enhanced device CRUD
-- [x] `frontend/app/api/family-guardian/sync-policies/route.ts` - NEW: Policy sync for devices
-- [x] `frontend/app/api/family-guardian/device-heartbeat/route.ts` - NEW: Heartbeat endpoint
-- [x] `frontend/app/api/family-guardian/revoke-device/route.ts` - NEW: Revoke device
+### [x] Step 1: Information Gathering & Analysis
+- [x] Explored entire codebase structure
+- [x] Checked all routes, navigation, components
+- [x] Identified root causes
 
-## ✅ Model Updates
-- [x] `frontend/models/ActivityLog.ts` - Added device action types
+### [ ] Step 2: Fix Plan Configuration
+- [ ] Update Basic price from ₹199 → ₹299 in `plan-config.ts`
+- [ ] Fix broken imports in PricingCard, FeatureComparison, UpgradeButton
 
-## ✅ Frontend UI Updates
-- [x] `frontend/app/dashboard/family-guardian/children/[id]/page.tsx` - Tabbed child profile
-- [x] `frontend/app/dashboard/family-guardian/blocking/page.tsx` - App-style UI with install status
-- [x] `frontend/app/dashboard/family-guardian/components/PairDeviceModal.tsx` - QR + code display
+### [ ] Step 3: Create `/pricing` Page
+- [ ] Create `frontend/app/pricing/page.tsx`
 
-## ✅ Verification
-- [x] TypeScript check - No new errors (all 11 errors are pre-existing)
-- [ ] Run lint
-- [ ] Run build
+### [ ] Step 4: Fix UpgradeButton - Add Checkout Navigation
+- [ ] Update `UpgradeButton.tsx` with onClick handler
+
+### [ ] Step 5: Create AI Workspace `/ai-tools`
+- [ ] Create `frontend/app/ai-tools/page.tsx` with chat interface
+
+### [ ] Step 6: Create Subscription Dashboard `/dashboard/subscription`
+- [ ] Create `frontend/app/dashboard/subscription/page.tsx`
+
+### [ ] Step 7: Update Homepage - Add AI Entry Point
+- [ ] Add AI section to `frontend/app/page.tsx`
+
+### [ ] Step 8: Update Navigation
+- [ ] Navbar already has AI Tools and Pricing links (routes now exist)
+- [ ] Add subscription link to dashboard sidebar
+- [ ] Add subscription link to profile dropdown
+
+### [ ] Step 9: Update PRODUCTION_CODE_AUDIT.md
+- [ ] Add UI & Product Discoverability Audit section
+
+### [ ] Step 10: Validation
+- [ ] npm run lint
+- [ ] npx tsc --noEmit
+- [ ] npm run build

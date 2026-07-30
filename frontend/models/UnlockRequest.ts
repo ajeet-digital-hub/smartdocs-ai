@@ -1,55 +1,46 @@
-import mongoose, { Document, Model, Schema } from "mongoose"
-
-export type UnlockRequestStatus = "pending" | "approved" | "denied" | "expired"
-export type UnlockRequestType = "website" | "app" | "screen-time" | "emergency"
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IUnlockRequest extends Document {
-  familyId: mongoose.Types.ObjectId
-  childId: mongoose.Types.ObjectId
-  deviceId?: mongoose.Types.ObjectId
-  type: UnlockRequestType
-  targetId: string
-  targetName: string
-  reason?: string
-  requestedDuration: number // minutes
-  grantedDuration?: number
-  status: UnlockRequestStatus
-  respondedBy?: mongoose.Types.ObjectId
-  respondedAt?: Date
-  expiresAt: Date
-  createdAt: Date
-  updatedAt: Date
+  childId: mongoose.Types.ObjectId;
+  familyId: mongoose.Types.ObjectId;
+  deviceId: mongoose.Types.ObjectId;
+  appId?: string; // Catalog app ID
+  appName?: string;
+  domain?: string; // For website unlock requests
+  requestType: "app" | "website";
+  reason: string;
+  status: "pending" | "approved" | "denied" | "expired";
+  requestedAt: Date;
+  respondedAt?: Date;
+  responseBy?: mongoose.Types.ObjectId; // ParentId
+  approvedDurationMinutes?: number;
+  expiresAt?: Date; // For approved requests
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const UnlockRequestSchema = new Schema<IUnlockRequest>(
+const UnlockRequestSchema: Schema = new Schema(
   {
-    familyId: { type: Schema.Types.ObjectId, ref: "Family", required: true, index: true },
-    childId: { type: Schema.Types.ObjectId, ref: "Child", required: true, index: true },
-    deviceId: { type: Schema.Types.ObjectId, ref: "Device" },
-    type: {
-      type: String,
-      enum: ["website", "app", "screen-time", "emergency"],
-      required: true,
-    },
-    targetId: { type: String, required: true },
-    targetName: { type: String, required: true },
-    reason: { type: String, trim: true },
-    requestedDuration: { type: Number, required: true, min: 1 },
-    grantedDuration: { type: Number, min: 0 },
-    status: {
-      type: String,
-      enum: ["pending", "approved", "denied", "expired"],
-      default: "pending",
-    },
-    respondedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    childId: { type: Schema.Types.ObjectId, ref: "Child", required: true },
+    familyId: { type: Schema.Types.ObjectId, ref: "Family", required: true },
+    deviceId: { type: Schema.Types.ObjectId, ref: "Device", required: true },
+    appId: { type: String },
+    appName: { type: String },
+    domain: { type: String },
+    requestType: { type: String, enum: ["app", "website"], required: true },
+    reason: { type: String, required: true },
+    status: { type: String, enum: ["pending", "approved", "denied", "expired"], default: "pending" },
+    requestedAt: { type: Date, default: Date.now },
     respondedAt: { type: Date },
-    expiresAt: { type: Date, required: true },
+    responseBy: { type: Schema.Types.ObjectId, ref: "User" },
+    approvedDurationMinutes: { type: Number },
+    expiresAt: { type: Date },
   },
   { timestamps: true }
-)
+);
 
-const UnlockRequest = (mongoose.models.UnlockRequest as Model<IUnlockRequest>) ||
-  mongoose.model<IUnlockRequest>("UnlockRequest", UnlockRequestSchema)
+UnlockRequestSchema.index({ childId: 1, status: 1 });
+UnlockRequestSchema.index({ deviceId: 1, status: 1 });
 
-export default UnlockRequest
-
+export default (mongoose.models.UnlockRequest as mongoose.Model<IUnlockRequest>) ||
+  mongoose.model<IUnlockRequest>("UnlockRequest", UnlockRequestSchema);

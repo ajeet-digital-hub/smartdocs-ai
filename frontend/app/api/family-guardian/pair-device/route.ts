@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
-import mongoose from "mongoose";
 import Family from "@/models/Family";
 import Child from "@/models/Child";
-import ActivityLog from "@/models/ActivityLog";
+import ActivityLog from "@/models/ActivityLog"; // Ensure ActivityLog is imported
 import crypto from "crypto";
+import mongoose from "mongoose";
+import dbConnect from "@/lib/dbConnect";
 
 /**
  * POST /api/family-guardian/pair-device
@@ -48,12 +49,21 @@ export async function POST(request: Request) {
       );
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI not set");
-      await mongoose.connect(process.env.MONGODB_URI);
+    try {
+      await dbConnect();
+    } catch (dbError: any) {
+      console.error("DB Connection Error in pair-device:", {
+        type: "MongoDB Connection Failure",
+        stage: "API Route Initialization",
+        route: "/api/family-guardian/pair-device",
+        message: dbError.message,
+        name: dbError.name,
+        stack: dbError.stack,
+      });
+      return NextResponse.json({ ok: false, error: "Database connection failed.", details: dbError.message }, { status: 500 });
     }
 
-    const family = await Family.findOne({ parentId: session.user.id });
+    const family = await Family.findOne({ parentId: new mongoose.Types.ObjectId(session.user.id) }); // Ensure parentId is ObjectId
     if (!family) {
       return NextResponse.json({ ok: false, error: "Family not found" }, { status: 404 });
     }

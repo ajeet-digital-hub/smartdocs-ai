@@ -77,8 +77,8 @@ export default function RewardsPage() {
     try {
       setLoading(true);
       const [rewardsRes, childrenRes] = await Promise.all([
-        fetch("/api/family/rewards"),
-        fetch("/api/family/children"),
+        fetch("/api/family-guardian/rewards"),
+        fetch("/api/family-guardian/children"),
       ]);
       const rewardsData = await rewardsRes.json();
       const childrenData = await childrenRes.json();
@@ -106,7 +106,7 @@ export default function RewardsPage() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/family/rewards", {
+      const res = await fetch("/api/family-guardian/rewards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
