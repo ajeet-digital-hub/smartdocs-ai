@@ -4,14 +4,31 @@ import { useState, useEffect } from "react"
 import FamilyGuardianLayout from "./components/FamilyGuardianLayout"
 import StatCard from "./components/StatCard"
 import LoadingState from "./components/LoadingState"
+import WelcomeAnimation from "./components/WelcomeAnimation"
 import { getAnalytics } from "@/lib/family-guardian-api"
 
 export default function FamilyGuardianDashboard() {
+  const [showWelcome, setShowWelcome] = useState(true)
   const [analytics, setAnalytics] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Check if user has seen the welcome animation before
+    const hasSeenWelcome = localStorage.getItem("fg_welcome_seen")
+    if (hasSeenWelcome) {
+      setShowWelcome(false)
+    }
+  }, [])
+
+  function handleWelcomeComplete() {
+    localStorage.setItem("fg_welcome_seen", "true")
+    setShowWelcome(false)
+  }
+
+  useEffect(() => {
+    if (showWelcome) return // Wait for welcome to finish
     async function load() {
+      setLoading(true)
       const res = await getAnalytics()
       if (res.ok && res.data?.analytics) {
         setAnalytics(res.data.analytics)
@@ -19,13 +36,15 @@ export default function FamilyGuardianDashboard() {
       setLoading(false)
     }
     load()
-  }, [])
+  }, [showWelcome])
 
   return (
-    <FamilyGuardianLayout
-      title="Family Guardian"
-      subtitle="Study First. Earn Screen Time."
-    >
+    <>
+      {showWelcome && <WelcomeAnimation onComplete={handleWelcomeComplete} />}
+      <FamilyGuardianLayout
+        title="Family Guardian"
+        subtitle="Study First. Earn Screen Time."
+      >
       {loading ? (
         <LoadingState />
       ) : (
@@ -184,6 +203,7 @@ export default function FamilyGuardianDashboard() {
         </div>
       )}
     </FamilyGuardianLayout>
+    </>
   )
 }
 

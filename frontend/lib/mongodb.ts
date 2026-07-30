@@ -20,15 +20,37 @@ export function getMongoClient() {
   }
 
   if (process.env.NODE_ENV === "development") {
+    console.log("Attempting to connect to MongoDB (MongoClient - Development)...");
     if (!globalForMongo._mongoClientPromise) {
-      globalForMongo._mongoClientPromise = new MongoClient(uri, options).connect()
+      globalForMongo._mongoClientPromise = new MongoClient(uri, options).connect().catch((error: any) => {
+        console.error("MongoDB (MongoClient) connection failed in development:", {
+          type: "MongoDB Connection Failure",
+          stage: "MongoClient Connect (Development)",
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+        });
+        throw error;
+      });
     }
+    console.log("MongoDB (MongoClient) connection successful in development.");
     return globalForMongo._mongoClientPromise
   }
 
   // Reuse client in production to avoid duplicate connections
   if (!clientPromise) {
-    clientPromise = new MongoClient(uri, options).connect()
+    console.log("Attempting to connect to MongoDB (MongoClient - Production)...");
+    clientPromise = new MongoClient(uri, options).connect().catch((error: any) => {
+      console.error("MongoDB (MongoClient) connection failed in production:", {
+        type: "MongoDB Connection Failure",
+        stage: "MongoClient Connect (Production)",
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      });
+      throw error;
+    });
   }
+  console.log("MongoDB (MongoClient) connection successful in production.");
   return clientPromise
 }

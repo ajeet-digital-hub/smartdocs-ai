@@ -168,6 +168,29 @@ export function Header() {
                       Dashboard
                     </Link>
                     <Link
+                      href="/dashboard/family-guardian"
+                      onClick={() => setMenuOpen(false)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        padding: "9px 14px",
+                        fontSize: "14px",
+                        color: "#4A3F34",
+                        textDecoration: "none",
+                        transition: "background 0.15s",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.background = "#F5F0E8")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.background = "transparent")
+                      }
+                    >
+                      <span style={{ fontSize: "16px" }}>🛡️</span>
+                      Family Guardian
+                    </Link>
+                    <Link
                       href="/dashboard/profile"
                       onClick={() => setMenuOpen(false)}
                       style={{
@@ -247,9 +270,7 @@ export function Header() {
                   >
                     <button
                       type="button"
-                      onClick={() =>
-                        signOut({ callbackUrl: "/login" })
-                      }
+                      onClick={() => signOut()}
                       style={{
                         width: "100%",
                         padding: "9px 14px",
@@ -285,4 +306,3 @@ export function Header() {
     </header>
   );
 }
-

@@ -1,239 +1,192 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
+import * as familyGuardianApi from "@/lib/family-guardian-api";
+import EmptyState from "@/app/family-guardian/components/EmptyState";
+import LoadingState from "@/app/family-guardian/components/LoadingState";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Child {
   _id: string;
   name: string;
   age: number;
-  dateOfBirth?: string;
   avatar?: string;
-  currentStatus: string;
-  points: number;
-  studyStreak: number;
 }
 
-export default function ChildrenPage() {
+export default function ManageChildrenPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [children, setChildren] = useState<Child[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [formName, setFormName] = useState("");
-  const [formAge, setFormAge] = useState("");
-  const [formDob, setFormDob] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  async function fetchChildren() {
-    try {
-      const res = await fetch("/api/family/children");
-      const data = await res.json();
-      if (data.ok) setChildren(data.children);
-    } catch {
-      setError("Failed to load children");
-    }
-  }
+  const [showAddChildForm, setShowAddChildForm] = useState(false);
+  const [newChildName, setNewChildName] = useState("");
+  const [newChildAge, setNewChildAge] = useState<number | string>("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
       return;
     }
-    if (status !== "authenticated") return;
-    fetchChildren();
+    if (status === "authenticated") {
+      fetchChildren();
+    }
   }, [status, router]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function fetchChildren() {
+    setLoading(true);
     setError(null);
+    try {
+      const data = await familyGuardianApi.getChildren();
+      if (data.ok) {
+        setChildren(data.children);
+      } else {
+        setError(data.error || "Failed to load children.");
+      }
+    } catch (err) {
+      setError("Failed to connect to the server.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-    const age = parseInt(formAge, 10);
-    if (!formName.trim() || isNaN(age) || age < 1 || age > 18) {
-      setError("Please enter a valid name and age (1-18)");
+  async function handleAddChild(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newChildName.trim() || !newChildAge || isNaN(Number(newChildAge))) {
+      setError("Please enter a valid name and age for the child.");
       return;
     }
-
-    setSubmitting(true);
     try {
-      const res = await fetch("/api/family/children", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formName.trim(),
-          age,
-          dateOfBirth: formDob || undefined,
-        }),
+      const res = await familyGuardianApi.createChild({
+        name: newChildName.trim(),
+        age: Number(newChildAge),
       });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || "Failed to create child");
-
-      setFormName("");
-      setFormAge("");
-      setFormDob("");
-      setShowForm(false);
-      await fetchChildren();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create child");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function handleDelete(childId: string, childName: string) {
-    if (!confirm(`Delete ${childName}? This cannot be undone.`)) return;
-    try {
-      const res = await fetch(`/api/family/children/${childId}`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.ok) {
-        setChildren((prev) => prev.filter((c) => c._id !== childId));
+      if (res.ok) {
+        setNewChildName("");
+        setNewChildAge("");
+        setShowAddChildForm(false);
+        fetchChildren(); // Refresh the list
+      } else {
+        setError(res.error || "Failed to add child.");
       }
-    } catch {
-      setError("Failed to delete child");
+    } catch (err) {
+      setError("Failed to add child.");
+      console.error(err);
     }
   }
 
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#141018" }}>
-        <div className="text-white text-lg">Loading...</div>
-      </div>
-    );
+  if (status === "loading" || loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">Loading children...</div>;
+  }
+
+  if (error) {
+    return <div className="bg-red-500/20 text-red-400 p-3 rounded-lg mb-4">{error}</div>;
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "#141018" }}>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <Link href="/dashboard/family-guardian" className="text-slate-400 hover:text-white text-sm mb-2 inline-block">
-              ← Back to Family Guardian
-            </Link>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">Children</h1>
-            <p className="text-slate-400 mt-1">Manage child profiles</p>
-          </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 text-white font-semibold text-sm shadow-lg hover:shadow-xl transition-all cursor-pointer"
-          >
-            {showForm ? "Cancel" : "+ Add Child"}
-          </button>
+    <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <h1 className="text-3xl font-bold mb-6">Manage Children</h1>
+
+      {children.length === 0 && !loading ? (
+        <EmptyState
+          icon="👨‍👩‍👧‍👦"
+          title="No Children Found"
+          description="Get started by adding your first child to the family."
+          action={{ label: "Add Child", onClick: () => setShowAddChildForm(true) }}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <AnimatePresence>
+            {children.map((child) => (
+              <motion.div
+                key={child._id}
+                className="bg-gray-700 rounded-lg shadow-lg p-6 flex flex-col items-center text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="text-5xl mb-4">{child.avatar || "👶"}</div>
+                <h2 className="text-xl font-semibold mb-2">{child.name}</h2>
+                <p className="text-gray-400 mb-4">Age: {child.age}</p>
+                <Link href={`/dashboard/family-guardian/children/${child._id}/overview`} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                  Manage {child.name}
+                </Link>
+              </motion.div>
+            ))}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="bg-gray-700 rounded-lg shadow-lg p-6 flex flex-col items-center justify-center border-2 border-dashed border-gray-600 hover:border-purple-500 cursor-pointer"
+              onClick={() => setShowAddChildForm(true)}
+            >
+              <span className="text-5xl text-gray-400">+</span>
+              <h2 className="text-xl font-semibold mt-4">Add New Child</h2>
+            </motion.div>
+          </AnimatePresence>
         </div>
+      )}
 
-        {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-            {error}
+      {showAddChildForm && (
+        <motion.form
+          onSubmit={handleAddChild}
+          className="bg-gray-700 rounded-lg shadow-lg p-6 max-w-md mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+        >
+          <h3 className="text-xl font-semibold mb-4">Add New Child</h3>
+          <div className="mb-4">
+            <label htmlFor="childName" className="block text-gray-300 text-sm font-bold mb-2">
+              Child's Name
+            </label>
+            <input
+              type="text"
+              id="childName"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-800 border-gray-600 text-white"
+              value={newChildName}
+              onChange={(e) => setNewChildName(e.target.value)}
+              required
+            />
           </div>
-        )}
-
-        {/* Add Child Form */}
-        {showForm && (
-          <form onSubmit={handleSubmit} className="mb-8 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6">
-            <h3 className="text-white font-semibold mb-4">New Child Profile</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">Name *</label>
-                <input
-                  type="text"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none focus:border-purple-500"
-                  placeholder="Child's name"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">Age *</label>
-                <input
-                  type="number"
-                  value={formAge}
-                  onChange={(e) => setFormAge(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none focus:border-purple-500"
-                  placeholder="1-18"
-                  min="1"
-                  max="18"
-                  required
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm text-slate-400 mb-1">Date of Birth (optional)</label>
-                <input
-                  type="date"
-                  value={formDob}
-                  onChange={(e) => setFormDob(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none focus:border-purple-500"
-                />
-              </div>
-            </div>
+          <div className="mb-6">
+            <label htmlFor="childAge" className="block text-gray-300 text-sm font-bold mb-2">
+              Child's Age
+            </label>
+            <input
+              type="number"
+              id="childAge"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-800 border-gray-600 text-white"
+              value={newChildAge}
+              onChange={(e) => setNewChildAge(e.target.value)}
+              min="0"
+              max="18"
+              required
+            />
+          </div>
+          <div className="flex items-center justify-between">
             <button
               type="submit"
-              disabled={submitting}
-              className="mt-4 px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 text-white font-semibold text-sm disabled:opacity-50 cursor-pointer"
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-300"
             >
-              {submitting ? "Creating..." : "Create Child Profile"}
+              Add Child
             </button>
-          </form>
-        )}
-
-        {/* Children List */}
-        {children.length === 0 ? (
-          <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-12 text-center">
-            <div className="text-5xl mb-4">👶</div>
-            <h3 className="text-xl font-semibold text-white mb-2">No Children Yet</h3>
-            <p className="text-slate-400 mb-6">Add your first child to get started.</p>
             <button
-              onClick={() => setShowForm(true)}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 text-white font-semibold cursor-pointer"
+              type="button"
+              onClick={() => setShowAddChildForm(false)}
+              className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-300"
             >
-              Add Your First Child
+              Cancel
             </button>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {children.map((child) => (
-              <div
-                key={child._id}
-                className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 flex items-center justify-between hover:bg-white/10 transition-all"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 flex items-center justify-center text-white font-bold text-lg">
-                    {child.avatar || child.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <Link href={`/dashboard/family-guardian/children/${child._id}`} className="text-white font-semibold hover:text-purple-400">
-                      {child.name}
-                    </Link>
-                    <p className="text-slate-400 text-sm">
-                      Age {child.age}
-                      {child.dateOfBirth && ` • Born ${new Date(child.dateOfBirth).toLocaleDateString()}`}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {child.points} points • {child.studyStreak} day streak
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={`/dashboard/family-guardian/children/${child._id}`}
-                    className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs hover:bg-white/20 transition-all"
-                  >
-                    View
-                  </Link>
-                  <button
-                    onClick={() => handleDelete(child._id, child.name)}
-                    className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition-all cursor-pointer"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        </motion.form>
+      )}
     </div>
   );
 }

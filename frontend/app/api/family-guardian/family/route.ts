@@ -1,36 +1,43 @@
 import { NextResponse } from "next/server"
-import { requireParentAuth, getMongoDb, toJSON } from "@/lib/family-guardian-auth"
+import { requireParentAuth, toJSON } from "@/lib/family-guardian-auth";
+import dbConnect from "@/lib/dbConnect"
+import { IFamily } from "@/models/Family"; // Import IFamily for typing
+import Family from "@/models/Family"
 
 export const GET = requireParentAuth(async (req, family) => {
-  return NextResponse.json({ ok: true, family: toJSON(family) })
-})
-
-export const PUT = requireParentAuth(async (req, family) => {
   try {
-    const body = await req.json()
-    const db = await getMongoDb()
-
-    const updates: any = {}
-    if (body.familyName) updates.familyName = body.familyName.trim()
-    if (body.plan) updates.plan = body.plan
-
-    if (Object.keys(updates).length === 0) {
-      return NextResponse.json({ ok: false, error: "No fields to update." }, { status: 400 })
+    // The 'family' object is already provided by requireParentAuth
+    if (!family) {
+      return NextResponse.json({ ok: false, error: "Family not found for this user." }, { status: 404 });
     }
-
-    updates.updatedAt = new Date()
-
-    await db.collection("families").updateOne(
-      { _id: family._id },
-      { $set: updates }
-    )
-
-    const updated = await db.collection("families").findOne({ _id: family._id })
-
-    return NextResponse.json({ ok: true, family: toJSON(updated) })
-  } catch (error) {
-    console.error("UPDATE FAMILY ERROR:", error)
-    return NextResponse.json({ ok: false, error: "Failed to update family." }, { status: 500 })
+    return NextResponse.json({ ok: true, family: toJSON(family) });
+  } catch (error: any) {
+    console.error("GET FAMILY API ERROR:", { message: error.message, stack: error.stack });
+    return NextResponse.json({ ok: false, error: "Failed to retrieve family data." }, { status: 500 });
   }
 })
 
+export const PUT = requireParentAuth(async (req, family) => {
+  try { // family is already InstanceType<typeof Family> from requireParentAuth
+    await dbConnect()
+    const body = await req.json()
+
+    const updates: any = {}
+    if (body.familyName) updates.familyName = body.familyName.trim()
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ ok: true, family: toJSON(family) }) // Nothing to update, return current state
+    }
+
+    const updated = await Family.findByIdAndUpdate<IFamily>(
+      family._id,
+      { $set: updates },
+      { new: true }
+    ).lean()
+
+    return NextResponse.json({ ok: true, family: toJSON(updated) })
+  } catch (error: unknown) {
+    console.error("UPDATE FAMILY ERROR:", { message: (error as Error).message, stack: (error as Error).stack });
+    return NextResponse.json({ ok: false, error: "Failed to update family." }, { status: 500 })
+  }
+})

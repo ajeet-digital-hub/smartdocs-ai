@@ -274,4 +274,3 @@ export const CATEGORY_COLORS: Record<string, string> = {
   utility: "text-cyan-400 bg-cyan-500/10",
   custom: "text-slate-400 bg-slate-500/10",
 };
-

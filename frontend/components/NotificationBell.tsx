@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import * as familyGuardianApi from "@/lib/family-guardian-api";
+import { markAllNotificationsRead } from "@/lib/family-guardian-api";
 
 interface Notification {
   _id: string;
@@ -25,8 +27,7 @@ export function NotificationBell() {
     if (!session?.user?.id) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/notifications");
-      const data = await res.json();
+      const data = await familyGuardianApi.getNotifications();
       if (data.ok) {
         setNotifications(data.notifications);
         prevCountRef.current = unreadCount;
@@ -59,11 +60,7 @@ export function NotificationBell() {
 
   const handleMarkRead = async (notificationId: string) => {
     try {
-      await fetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notificationId }),
-      });
+      await familyGuardianApi.markNotificationRead(notificationId);
       setNotifications((prev) =>
         prev.map((n) => (n._id === notificationId ? { ...n, read: true } : n))
       );
@@ -75,11 +72,7 @@ export function NotificationBell() {
 
   const handleMarkAllRead = async () => {
     try {
-      await fetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ markAllRead: true }),
-      });
+      await markAllNotificationsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (err) {
@@ -302,4 +295,3 @@ export function NotificationBell() {
     </div>
   );
 }
-

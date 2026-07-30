@@ -201,4 +201,12 @@ export const categories: Category[] = [
     gradient: "from-purple-500 to-cyan-500",
     count: 1,
   },
+  {
+    id: "language-translation",
+    name: "Language & Translation",
+    icon: "🌐",
+    color: "#1d4ed8",
+    gradient: "from-blue-700 to-cyan-500",
+    count: 8, // Initial count
+  },
 ];

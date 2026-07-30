@@ -1,28 +1,40 @@
-# Code Audit Fix Progress — COMPLETED ✅
+# UI & Product Discoverability Fix - Implementation Plan
 
-## Fixes Implemented
+## Steps:
 
-| # | File | Issue | Status |
-|---|------|-------|--------|
-| 1 | `frontend/lib/device-auth.ts` | Dead code after return (undefined vars) | ✅ Fixed |
-| 2 | `frontend/app/api/auth/register/route.ts` | Missing mongoose import | ✅ Fixed |
-| 3 | `frontend/app/api/family-guardian/pair-device/route.ts` | Missing mongoose import | ✅ Fixed |
-| 4 | `frontend/app/api/family-guardian/device-heartbeat/route.ts` | Missing IInstalledApp import, wrong verifyDeviceToken call | ✅ Fixed |
-| 5 | `frontend/app/api/family-guardian/sync-policies/route.ts` | Wrong verifyDeviceToken call | ✅ Fixed |
-| 6 | `frontend/app/api/family-guardian/children/route.ts` | Broken import path | ✅ Fixed |
-| 7 | `frontend/lib/subscription-service.ts` | Wrong type (SubscriptionPlan), wrong field (currentPlan) | ✅ Fixed |
-| 8 | `frontend/lib/family-guardian-auth.ts` | Multiple broken imports (logger, FamilySubscription, feature-access path) | ✅ Fixed |
-| 9 | `frontend/models/subscription-state-machine.ts` | Non-existent logger import | ✅ Fixed |
-| 10 | `frontend/lib/route.ts` | Duplicate/dead code after first `});` | ✅ Fixed |
-| 11 | `frontend/app/api/family/rewards/route.ts` | Extra closing brace | ✅ Fixed |
-| 12 | `frontend/lib/family-guardian-api.ts` | Missing return in respondToEmergencyRequest | ✅ Fixed |
-| 13 | `frontend/app/dashboard/family-guardian/analytics/page.tsx` | motion.div closed as div | ✅ Fixed |
-| 14 | `frontend/models/Subscription.ts` | Missing GRACE_PERIOD in enum, unique:true on userId | ✅ Fixed |
+### [x] Step 1: Information Gathering & Analysis
+- [x] Explored entire codebase structure
+- [x] Checked all routes, navigation, components
+- [x] Identified root causes
 
-## Validation
-- [ ] Run `npm run lint`
-- [x] Run `npx tsc --noEmit` — Initial: 9 errors, After fixes: Pending verification
-- [ ] Run `npm run build`
-- [x] Review git diff
-- [x] Create PRODUCTION_CODE_AUDIT.md
+### [ ] Step 2: Fix Plan Configuration
+- [ ] Update Basic price from ₹199 → ₹299 in `plan-config.ts`
+- [ ] Fix broken imports in PricingCard, FeatureComparison, UpgradeButton
 
+### [ ] Step 3: Create `/pricing` Page
+- [ ] Create `frontend/app/pricing/page.tsx`
+
+### [ ] Step 4: Fix UpgradeButton - Add Checkout Navigation
+- [ ] Update `UpgradeButton.tsx` with onClick handler
+
+### [ ] Step 5: Create AI Workspace `/ai-tools`
+- [ ] Create `frontend/app/ai-tools/page.tsx` with chat interface
+
+### [ ] Step 6: Create Subscription Dashboard `/dashboard/subscription`
+- [ ] Create `frontend/app/dashboard/subscription/page.tsx`
+
+### [ ] Step 7: Update Homepage - Add AI Entry Point
+- [ ] Add AI section to `frontend/app/page.tsx`
+
+### [ ] Step 8: Update Navigation
+- [ ] Navbar already has AI Tools and Pricing links (routes now exist)
+- [ ] Add subscription link to dashboard sidebar
+- [ ] Add subscription link to profile dropdown
+
+### [ ] Step 9: Update PRODUCTION_CODE_AUDIT.md
+- [ ] Add UI & Product Discoverability Audit section
+
+### [ ] Step 10: Validation
+- [ ] npm run lint
+- [ ] npx tsc --noEmit
+- [ ] npm run build

@@ -2,9 +2,9 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import AppleProvider from "next-auth/providers/apple";
-import User from "@/models/User";
+import User from "@/models/User"; // Assuming User model is used for credentials
 import bcrypt from "bcrypt";
-import mongoose from "mongoose";
+import dbConnect from "@/lib/dbConnect"; // Import the dbConnect utility
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -25,20 +25,43 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         try {
           // Check if there is an existing connection before creating a new one
-          if (mongoose.connection.readyState !== 1) {
-            if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI not set");
-            await mongoose.connect(process.env.MONGODB_URI, {
-              serverSelectionTimeoutMS: 5000,
+          try {
+            await dbConnect();
+            console.log("[Authorize] DB connection successful.");
+          } catch (dbError: any) {
+            console.error("DB Connection Error in authOptions (authorize):", {
+              type: "MongoDB Connection Failure",
+              stage: "NextAuth Authorize",
+              message: dbError.message,
             });
+            return null; // Cannot authorize without database connection
           }
 
           if (!credentials?.email || !credentials.password) return null;
 
-          const user = await User.findOne({ email: credentials.email.toLowerCase().trim() });
-          if (!user || !user.passwordHash) return null;
+          console.log(`[Authorize] Looking up user in 'users' collection with email: ${credentials.email}`);
+          const user = await User.findOne({ email: credentials.email.toLowerCase().trim() }).select('+passwordHash');
+          
+          if (!user) {
+            console.log("[Authorize] User lookup result: User not found.");
+            return null;
+          }
+          console.log(`[Authorize] User lookup result: Found user with ID: ${user._id}`);
+          
+          if (!user.passwordHash) {
+            console.log("[Authorize] passwordHash exists: false. User may have registered via social login.");
+            return null;
+          }
+          console.log("[Authorize] passwordHash exists: true.");
 
           const isPasswordCorrect = await bcrypt.compare(credentials.password, user.passwordHash);
-          if (!isPasswordCorrect) return null;
+          console.log(`[Authorize] bcrypt.compare() result: ${isPasswordCorrect}`);
+          if (!isPasswordCorrect) {
+            console.log("[Authorize] Password comparison failed.");
+            return null;
+          }
+          
+          console.log("[Authorize] Authorization successful. Returning user object to NextAuth.");
 
           return {
             id: user._id.toString(),
@@ -65,6 +88,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
+      console.log(`[NextAuth JWT Callback] Trigger: ${trigger}`);
       if (user) {
         token.id = user.id;
         token.fullName = user.fullName;
@@ -80,6 +104,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      console.log("[NextAuth Session Callback] Populating session with token data.");
       if (session.user) {
         session.user.id = token.id as string;
         session.user.fullName = token.fullName as string;
@@ -95,4 +120,3 @@ export const authOptions: NextAuthOptions = {
   },
   debug: process.env.NODE_ENV === "development",
 };
-

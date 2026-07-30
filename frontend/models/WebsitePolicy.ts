@@ -18,6 +18,7 @@ export interface IWebsitePolicy extends Document {
   allowedDays: number[] // 0=Sun, 1=Mon, ...
   timezone: string
   isActive: boolean
+  policyVersion: number; // Incremented on each change for device sync
   createdAt: Date
   updatedAt: Date
 }
@@ -37,6 +38,7 @@ const WebsitePolicySchema = new Schema<IWebsitePolicy>(
     scheduleEnd: { type: String },
     allowedDays: [{ type: Number, min: 0, max: 6 }],
     timezone: { type: String, default: "UTC" },
+    policyVersion: { type: Number, default: 1 },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
@@ -49,4 +51,3 @@ const WebsitePolicy = (mongoose.models.WebsitePolicy as Model<IWebsitePolicy>) |
   mongoose.model<IWebsitePolicy>("WebsitePolicy", WebsitePolicySchema)
 
 export default WebsitePolicy
-

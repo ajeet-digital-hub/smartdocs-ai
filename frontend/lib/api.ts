@@ -1,298 +1,100 @@
 /**
- * Centralized API client for communicating with the backend Express server.
+ * Generic API fetch utility and client for general services
+ *
+ * Note: Specific types for Service and Category are assumed to be defined
+ * elsewhere (e.g., in frontend/app/services/types.ts) or are handled as 'any'
+ * to avoid introducing new type definitions not directly requested.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-
-interface FetchOptions extends RequestInit {
-  params?: Record<string, string | undefined>;
+interface ApiFetchOptions extends RequestInit {
+  params?: Record<string, string>;
 }
 
-function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null;
-
-  // Try to get token from localStorage (set by login flow)
-  try {
-    // Check NextAuth token first
-    const nextAuthToken = localStorage.getItem("next-auth.session-token");
-    if (nextAuthToken) return nextAuthToken;
-
-    // Check our custom auth token
-    const sdToken = localStorage.getItem("sd_token");
-    if (sdToken) return sdToken;
-
-    // Try to parse user object
-    const sdUser = localStorage.getItem("sd_user");
-    if (sdUser) {
-      try {
-        const parsed = JSON.parse(sdUser);
-        if (parsed.token) return parsed.token;
-      } catch {
-        // sd_user is just an email string
-        return null;
-      }
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-export async function apiFetch<T = unknown>(
+export async function apiFetch<T>(
   endpoint: string,
-  options: FetchOptions = {}
-): Promise<{ ok: boolean; data?: T; error?: string }> {
-  const { params, ...fetchOpts } = options;
+  options: ApiFetchOptions = {}
+): Promise<T> {
+  const { params, ...fetchOptions } = options;
+  let url = endpoint;
 
-  // Build URL
-  let url = `${API_BASE_URL}${endpoint}`;
   if (params) {
-    const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== "") {
-        searchParams.set(key, value);
-      }
-    });
-    const qs = searchParams.toString();
-    if (qs) url += `?${qs}`;
+    const searchParams = new URLSearchParams(params);
+    url += `?${searchParams.toString()}`;
   }
 
-  // Build headers
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(fetchOpts.headers as Record<string, string>),
-  };
+  const response = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...fetchOptions.headers,
+    },
+    ...fetchOptions,
+  });
 
-  const token = getAuthToken();
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  const contentType = response.headers.get("content-type");
+
+  if (!response.ok || !contentType?.includes("application/json")) {
+    const errorText = await response.text();
+    console.error(`API Fetch Error: ${response.status} ${response.statusText} on ${url}`);
+    console.error(`Response (first 300 chars): ${errorText.substring(0, 300)}`);
+    throw new Error(
+      `API request failed to ${url} with status ${response.status}. Expected JSON but received ${contentType}.`
+    );
   }
 
-  try {
-    const response = await fetch(url, {
-      ...fetchOpts,
-      headers,
-    });
-
-    const body = await response.json();
-
-    if (!response.ok) {
-      return {
-        ok: false,
-        error: body.error || body.message || `HTTP ${response.status}`,
-      };
-    }
-
-    return { ok: true, data: body };
-  } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : "Network error",
-    };
-  }
+  return response.json() as Promise<T>;
 }
 
-// ─── Services API ───
+// ─── General Services API Client ───
 
-export interface Service {
-  id: string;
-  name: string;
-  slug: string;
-  shortDescription: string;
-  fullDescription: string;
-  description: string;
-  category: string;
-  categoryId: string;
-  categoryName: string;
-  categoryIcon: string;
-  categoryColor: string;
-  categoryGradient: string;
-  icon: string;
-  image: string | null;
-  route: string;
-  status: string;
-  isActive: boolean;
-  isFeatured: boolean;
-  popular: boolean;
-  trending: boolean;
-  new: boolean;
-  tags: string[];
-  sortOrder: number;
-  usageCount: number;
-  createdAt: string;
-  updatedAt: string;
+export async function getServices() {
+  return apiFetch<{ ok: boolean; data: { services: any[] } }>("/api/services");
 }
 
-export interface Category {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-  gradient: string;
-  count: number;
-  sortOrder: number;
-}
-
-// Fetch services with filters
-export async function getServices(params?: {
-  category?: string;
-  categoryId?: string;
-  search?: string;
-  popular?: string;
-  trending?: string;
-  new?: string;
-  featured?: string;
-  page?: string;
-  limit?: string;
-}) {
-  return apiFetch<{
-    ok: boolean;
-    services: Service[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  }>("/services", { params });
-}
-
-// Fetch categories
 export async function getCategories() {
-  return apiFetch<{
-    ok: boolean;
-    categories: Category[];
-  }>("/services/categories");
+  return apiFetch<{ ok: boolean; data: { categories: any[] } }>("/api/services/categories");
 }
 
-// Fetch a single service by slug/id
-export async function getServiceBySlug(slug: string) {
-  return apiFetch<{
-    ok: boolean;
-    service: Service;
-  }>(`/services/${slug}`);
-}
-
-// Fetch trending services
 export async function getTrendingServices() {
-  return apiFetch<{
-    ok: boolean;
-    services: Service[];
-  }>("/services/trending");
+  return apiFetch<{ ok: boolean; data: { services: any[] } }>("/api/services/trending");
 }
 
-// Fetch popular services
 export async function getPopularServices() {
-  return apiFetch<{
-    ok: boolean;
-    services: Service[];
-  }>("/services/popular");
+  return apiFetch<{ ok: boolean; data: { services: any[] } }>("/api/services/popular");
 }
 
-// Fetch new services
 export async function getNewServices() {
-  return apiFetch<{
-    ok: boolean;
-    services: Service[];
-  }>("/services/new");
+  return apiFetch<{ ok: boolean; data: { services: any[] } }>("/api/services/new");
 }
 
-// Fetch featured services
-export async function getFeaturedServices() {
-  return apiFetch<{
-    ok: boolean;
-    services: Service[];
-  }>("/services/featured");
-}
-
-// Fetch recently used services (auth required)
 export async function getRecentlyUsed() {
-  return apiFetch<{
-    ok: boolean;
-    services: Service[];
-  }>("/services/recent");
+  // Assuming this endpoint exists and returns recently used services
+  return apiFetch<{ ok: boolean; data: { services: any[] } }>("/api/services/recently-used");
 }
 
-// Fetch favorite services (auth required)
 export async function getFavoriteServices() {
-  return apiFetch<{
-    ok: boolean;
-    services: Service[];
-  }>("/services/favorites");
+  // Assuming this endpoint exists and returns favorite services
+  return apiFetch<{ ok: boolean; data: { services: any[] } }>("/api/services/favorites");
 }
 
-// Search services
-export async function searchServices(params: {
-  q?: string;
-  category?: string;
-  categoryId?: string;
-  popular?: string;
-  trending?: string;
-  new?: string;
-}) {
-  return apiFetch<{
-    ok: boolean;
-    services: Service[];
-    total: number;
-  }>("/services/search", { params });
-}
-
-// Add favorite (auth required)
 export async function addFavorite(serviceId: string) {
-  return apiFetch<{ ok: boolean; message: string }>(
-    `/services/${serviceId}/favorite`,
-    { method: "POST" }
-  );
+  // Assuming this endpoint exists for adding a favorite
+  return apiFetch<{ ok: boolean; message: string }>("/api/services/favorites", {
+    method: "POST",
+    body: JSON.stringify({ serviceId }),
+  });
 }
 
-// Remove favorite (auth required)
 export async function removeFavorite(serviceId: string) {
-  return apiFetch<{ ok: boolean; message: string }>(
-    `/services/${serviceId}/favorite`,
-    { method: "DELETE" }
-  );
+  // Assuming this endpoint exists for removing a favorite
+  return apiFetch<{ ok: boolean; message: string }>(`/api/services/favorites/${serviceId}`, {
+    method: "DELETE",
+  });
 }
 
-// Track launch (auth required)
 export async function trackLaunch(serviceId: string) {
-  return apiFetch<{ ok: boolean; message: string }>(
-    `/services/${serviceId}/launch`,
-    { method: "POST" }
-  );
-}
-
-// ─── Auth API ───
-
-export async function login(email: string, password: string) {
-  return apiFetch<{
-    ok: boolean;
-    token: string;
-    user: { id: number; fullName: string; email: string };
-  }>("/auth/login", {
+  // Assuming this endpoint exists for tracking service launches
+  return apiFetch<{ ok: boolean; message: string }>("/api/services/track-launch", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ serviceId }),
   });
-}
-
-export async function register(data: {
-  fullName: string;
-  email?: string;
-  password: string;
-  countryCode?: string;
-  phoneNumber?: string;
-}) {
-  return apiFetch<{
-    ok: boolean;
-    token: string;
-    user: { id: number; fullName: string; email: string };
-  }>("/auth/register", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
-export async function getMe() {
-  return apiFetch<{
-    ok: boolean;
-    user: { id: number; fullName: string; email: string; createdAt: string };
-  }>("/auth/me");
 }

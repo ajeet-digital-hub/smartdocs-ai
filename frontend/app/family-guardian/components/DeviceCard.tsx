@@ -7,6 +7,7 @@ interface Device {
   name: string
   deviceType: string
   status: string
+  batteryLevel?: number
   connectionStatus: string
   policySyncStatus: string
   lastSeen?: string
@@ -80,7 +81,10 @@ export default function DeviceCard({ device, childName, onRename, onAssign, onSy
         </div>
 
         <div className="flex flex-col items-end gap-1">
-          <StatusBadge status={device.status} />
+          <StatusBadge status={device.status} size="md" />
+          {device.batteryLevel !== undefined && (
+            <span className="text-xs text-slate-400 dark:text-slate-500">🔋 {device.batteryLevel}%</span>
+          )}
           <span className="text-xs text-slate-400 dark:text-slate-500">{timeAgo(device.lastSeen)}</span>
         </div>
       </div>
@@ -120,4 +124,3 @@ export default function DeviceCard({ device, childName, onRename, onAssign, onSy
     </div>
   )
 }
-

@@ -1,42 +1,37 @@
-"use client"
+"use client";
+
+import { LucideProps } from "lucide-react";
 
 interface StatCardProps {
-  label: string
-  value: string | number
-  icon: string
-  color?: string
-  subtitle?: string
+  label: string;
+  value: string | number;
+  icon: React.ElementType<LucideProps> | string; // Allow string for now
+  color: "purple" | "red" | "green" | "orange";
 }
 
-export default function StatCard({ label, value, icon, color = "purple", subtitle }: StatCardProps) {
-  const colorMap: Record<string, string> = {
-    purple: "from-purple-500 to-purple-600",
-    blue: "from-blue-500 to-blue-600",
-    green: "from-emerald-500 to-green-600",
-    orange: "from-orange-500 to-amber-600",
-    red: "from-red-500 to-rose-600",
-    pink: "from-pink-500 to-rose-600",
-    indigo: "from-indigo-500 to-indigo-600",
-    teal: "from-teal-500 to-cyan-600",
-  }
+const colorClasses = {
+  purple: "text-[#A78BFA]",
+  red: "text-[#F87171]",
+  green: "text-[#34D399]",
+  orange: "text-[#FBBF24]",
+};
 
-  const gradient = colorMap[color] || colorMap.purple
-
+export default function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{value}</p>
-          {subtitle && (
-            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{subtitle}</p>
+    <div className="rounded-2xl border border-[#1F2937] bg-[#111827] p-5 shadow-lg">
+      <div className="flex items-center gap-4">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-800 ${colorClasses[color]}`}>
+          {typeof Icon === 'string' ? (
+            <span className="text-xl">{Icon}</span>
+          ) : (
+            <Icon size={20} />
           )}
         </div>
-        <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-xl text-white shadow-sm`}>
-          {icon}
+        <div>
+          <p className="text-sm text-gray-400">{label}</p>
+          <p className="text-2xl font-bold text-white">{value}</p>
         </div>
       </div>
     </div>
-  )
+  );
 }
-
