@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
-import Device from "@/models/Device";
+import Device, { IInstalledApp } from "@/models/Device";
 import Family from "@/models/Family";
 import AppPolicy from "@/models/AppPolicy";
+import WebsitePolicy from "@/models/WebsitePolicy";
+import Schedule from "@/models/Schedule";
 import ActivityLog from "@/models/ActivityLog";
-import { verifyDeviceToken } from "../device-auth/route";
+import dbConnect from "@/lib/dbConnect";
+import { verifyDeviceToken } from "@/lib/device-auth";
 
 /*
  * POST /api/family-guardian/device-heartbeat
@@ -21,27 +23,44 @@ import { verifyDeviceToken } from "../device-auth/route";
  *   screenOn: boolean
  *   foregroundApp: string (package name)
  *   installedApps: Array of { packageName, appName, version }
+ *   lastSyncedPolicyVersion: number // Version of policies last synced by the device
  */
 export async function POST(request: Request) {
   try {
+    await dbConnect();
     // Verify device token
-    const { device, error, status } = await verifyDeviceToken(request);
+    const { device, error, status } = await verifyDeviceToken(request, {
+      skipSave: true, // We will save the device manually later with more updates
+    });
     if (!device || error) {
-      return NextResponse.json({ ok: false, error: error || "Unauthorized" }, { status: status || 401 });
+      return NextResponse.json(
+        { ok: false, error: error || "Unauthorized" },
+        { status: status || 401 }
+      );
     }
 
     const body = await request.json();
-    const { status: deviceStatus, batteryLevel, screenOn, foregroundApp, installedApps } = body;
+    const {
+      status: deviceStatus,
+      batteryLevel,
+      screenOn,
+      foregroundApp,
+      installedApps,
+      lastSyncedPolicyVersion: deviceReportedPolicyVersion,
+    } = body;
 
     // Update device status and timing
     const updateData: Record<string, unknown> = {
       lastSeen: new Date(),
       status: deviceStatus === "offline" ? "offline" : "online",
+      batteryLevel: batteryLevel,
     };
 
     // If device reports as offline, log it
     if (deviceStatus === "offline" && device.status !== "offline") {
-      const family = await Family.findById(device.familyId).select("parentId").lean();
+      const family = await Family.findById(device.familyId)
+        .select("parentId")
+        .lean();
       await ActivityLog.create({
         familyId: device.familyId,
         childId: device.childId,
@@ -52,49 +71,47 @@ export async function POST(request: Request) {
       });
     }
 
-    // Update installed apps if provided
-    if (installedApps && Array.isArray(installedApps) && installedApps.length > 0) {
+    // Process installed apps if provided
+    if (
+      installedApps &&
+      Array.isArray(installedApps) &&
+      installedApps.length > 0
+    ) {
       const now = new Date();
-      const detectedPackages = new Set<string>();
+      const newInstalledApps: IInstalledApp[] = [];
+      const incomingPackagesMap = new Map<string, IInstalledApp>(
+        installedApps.map((app: IInstalledApp) => [app.packageName, app])
+      );
 
-      for (const app of installedApps) {
-        if (!app.packageName) continue;
-        detectedPackages.add(app.packageName);
-
-        // Check if app already exists in installedApps array
-        const existingIndex = device.installedApps.findIndex(
-          (ia) => ia.packageName === app.packageName
-        );
-
-        if (existingIndex >= 0) {
-          // Update existing entry
-          device.installedApps[existingIndex].isDetected = true;
-          device.installedApps[existingIndex].lastDetected = now;
-          device.installedApps[existingIndex].appName = app.appName || device.installedApps[existingIndex].appName;
-          device.installedApps[existingIndex].version = app.version || device.installedApps[existingIndex].version;
-        } else {
-          // Add new entry
-          (device.installedApps as any).push({
-            packageName: app.packageName,
-            appName: app.appName || "Unknown",
-            version: app.version || "1.0",
+      // Update existing apps and add new ones
+      for (const existingApp of device.installedApps) {
+        if (incomingPackagesMap.has(existingApp.packageName)) {
+          const incoming = incomingPackagesMap.get(existingApp.packageName)!;
+          newInstalledApps.push({
+            ...existingApp.toObject(), // Convert Mongoose subdoc to plain object
+            appName: incoming.appName || existingApp.appName,
+            version: incoming.version || existingApp.version,
             isDetected: true,
             lastDetected: now,
           });
+          incomingPackagesMap.delete(existingApp.packageName); // Remove from incoming map
         }
       }
-
-      // Mark apps not in the report as not detected (they were uninstalled)
-      for (let i = 0; i < device.installedApps.length; i++) {
-        if (!detectedPackages.has(device.installedApps[i].packageName)) {
-          device.installedApps[i].isDetected = false;
-        }
+      // Add any remaining new apps
+      for (const incomingApp of incomingPackagesMap.values()) {
+        newInstalledApps.push({
+          packageName: incomingApp.packageName,
+          appName: incomingApp.appName || "Unknown",
+          version: incomingApp.version || "1.0",
+          isDetected: true,
+          lastDetected: now,
+        });
       }
+      device.installedApps = newInstalledApps;
     }
 
-    // Apply updates to device
-    device.status = updateData.status as "online" | "offline" | "pending";
-    device.lastSeen = updateData.lastSeen as Date;
+    // Apply other updates to device
+    Object.assign(device, updateData);
     await device.save();
 
     // Check if policy updates are available by comparing versions
@@ -106,23 +123,33 @@ export async function POST(request: Request) {
       .select("policyVersion")
       .lean();
 
-    const currentPolicyVersion = maxPolicyVersion?.policyVersion || 0;
+    const latestPolicyVersion = maxPolicyVersion?.policyVersion || 0;
+
+    const policyUpdatesRequired =
+      deviceReportedPolicyVersion < latestPolicyVersion;
 
     // Log heartbeat activity periodically (not every beat - avoid noise)
     // Only log heartbeat if status changed or significant event
 
     return NextResponse.json({
       ok: true,
-      status: device.status,
+      status: device.status, // Current status of the device
       lastSeen: device.lastSeen.toISOString(),
-      policyUpdatesRequired: false, // Will be updated when policy version tracking is implemented
-      currentPolicyVersion,
+      policyUpdatesRequired,
+      latestPolicyVersion,
       serverTime: new Date().toISOString(),
       deviceId: device.deviceId,
     });
   } catch (error) {
-    console.error("DEVICE HEARTBEAT ERROR:", error);
-    return NextResponse.json({ ok: false, error: "Failed to process heartbeat" }, { status: 500 });
+    console.error("DEVICE HEARTBEAT ERROR:", {
+      route: "/api/family-guardian/device-heartbeat",
+      message: (error as Error).message,
+      stack: (error as Error).stack,
+      deviceToken: request.headers.get("Authorization"),
+    });
+    return NextResponse.json(
+      { ok: false, error: "Failed to process heartbeat" },
+      { status: 500 }
+    );
   }
 }
-
