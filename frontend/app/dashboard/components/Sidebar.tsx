@@ -6,7 +6,9 @@ import { useState } from "react"
 
 const mainNav = [
   { label: "Dashboard", href: "/dashboard", icon: "📊" },
+  { label: "AI Workspace", href: "/ai-tools", icon: "🤖" },
   { label: "Services", href: "/services", icon: "🛠️" },
+  { label: "Subscription", href: "/dashboard/subscription", icon: "💳" },
 ]
 
 const guardianNav = [
