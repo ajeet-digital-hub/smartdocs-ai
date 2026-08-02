@@ -1,18 +1,47 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+/**
+ * SmartDocs AI — Premium AI Workspace Homepage
+ *
+ * Brand positioning:
+ *   "One AI. Everything you need."
+ *   "Tell SmartDocs what you want done. It figures out the rest."
+ *
+ * Hierarchy:
+ *  1. SmartDocs AI branding/navigation (in layout Navbar)
+ *  2. Female AI Assistant + AI Command Center
+ *  3. Quick actions
+ *  4. "What do you want to do?" service launcher
+ *  5. Goal Mode — "What are you trying to accomplish?"
+ *  6. Family Guardian — integrated protection card
+ *  7. App & Website Blocking (clearly visible)
+ *  8. How it works + testimonials
+ *  9. Pricing preview
+ * 10. Custom Plan / Contact Sales CTA
+ * 11. Final CTA — "Stop searching for tools."
+ * 12. Footer
+ */
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { Star, ArrowRight, Sparkles, Command } from "lucide-react";
+import HomeAICommandCenter from "@/components/HomeAICommandCenter";
+import AppBlockingSection from "@/components/AppBlockingSection";
+import CommandPalette from "@/components/CommandPalette";
+import { SMARTDOCS_SERVICES, ServiceCategory } from "@/app/api/ai/chat/service-knowledge";
 
-/* ───────────────────────────────────────────
-   ScrollReveal component
-   ─────────────────────────────────────────── */
-function ScrollReveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+// ── Scroll reveal ─────────────────────────────────────
+function ScrollReveal({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   const ref = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -22,11 +51,9 @@ function ScrollReveal({ children, className = "" }: { children: React.ReactNode;
       },
       { threshold: 0.1 }
     );
-
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-
   return (
     <div ref={ref} className={`reveal ${className}`}>
       {children}
@@ -34,472 +61,160 @@ function ScrollReveal({ children, className = "" }: { children: React.ReactNode;
   );
 }
 
-/* ───────────────────────────────────────────
-   Trust Stats
-   ─────────────────────────────────────────── */
-const trustStats = [
-  { value: "50+", label: "AI Tools" },
-  { value: "100%", label: "Cloud Based" },
-  { value: "24/7", label: "Available" },
-  { value: "1", label: "Smart Workspace" },
+// ── Service launcher cards ────────────────────────────
+const LAUNCHER_CARDS: {
+  title: string;
+  emoji: string;
+  desc: string;
+  href: string;
+}[] = [
+  { title: "Documents", emoji: "📄", desc: "PDF, Word, Excel & more", href: "/services" },
+  { title: "AI Assistant", emoji: "🤖", desc: "Chat, summarize, answer", href: "/ai-tools" },
+  { title: "Translation", emoji: "🌐", desc: "Multi-language docs", href: "/services" },
+  { title: "OCR & Images", emoji: "🖼️", desc: "Extract text from images", href: "/services" },
+  { title: "Document Analysis", emoji: "📊", desc: "Insights, risks, deadlines", href: "/services" },
+  { title: "App & Website Blocking", emoji: "🚫", desc: "Family screen-time control", href: "/dashboard/family-guardian/blocking" },
+  { title: "Family Guardian", emoji: "👨‍👩‍👧", desc: "Protect & guide your kids", href: "/dashboard/family-guardian" },
+  { title: "More Services", emoji: "⚙️", desc: "Browse 300+ tools", href: "/services" },
 ];
 
-/* ───────────────────────────────────────────
-   Tools Data
-   ─────────────────────────────────────────── */
-const tools = [
-  {
-    icon: "📸",
-    badge: "PP",
-    accent: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
-    title: "Passport Photo Maker",
-    description: "Create professional passport size photos.",
-    href: "/tools/passport-photo",
-  },
-  {
-    icon: "🪄",
-    badge: "BR",
-    accent: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
-    title: "Background Remover",
-    description: "Remove image backgrounds instantly.",
-    href: "/tools/background-remover",
-  },
-  {
-    icon: "🖼️",
-    badge: "IR",
-    accent: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-    title: "Image Resize",
-    description: "Resize images for any requirement.",
-    href: "/tools/image-resize",
-  },
-  {
-    icon: "✂️",
-    badge: "IC",
-    accent: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
-    title: "Image Crop",
-    description: "Crop and adjust your images easily.",
-    href: "/tools/image-crop",
-  },
-  {
-    icon: "🪪",
-    badge: "ID",
-    accent: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-    title: "ID Card Maker",
-    description: "Create professional ID cards.",
-    href: "/tools/id-card-maker",
-  },
-  {
-    icon: "📄",
-    badge: "RB",
-    accent: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
-    title: "Resume Builder",
-    description: "Build modern ATS-friendly resumes.",
-    href: "/tools/resume-builder",
-  },
-  {
-    icon: "📱",
-    badge: "SM",
-    accent: "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300",
-    title: "Social Media Designer",
-    description: "Create posts and banners easily.",
-    href: "/tools/social-media-designer",
-  },
-  {
-    icon: "📑",
-    badge: "PDF",
-    accent: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
-    title: "PDF Tools",
-    description: "Merge, split and compress PDFs.",
-    href: "/tools/pdf-tools",
-  },
-];
-
-/* ───────────────────────────────────────────
-   AI Showcase Cards
-   ─────────────────────────────────────────── */
-const aiShowcaseCards = [
-  {
-    icon: "📝",
-    title: "AI Document Creation",
-    description:
-      "Generate professional documents, reports, and letters in seconds with intelligent AI assistance.",
-    gradient: "from-purple-600 to-pink-500",
-    href: "/tools",
-  },
-  {
-    icon: "🎨",
-    title: "AI Image Enhancement",
-    description:
-      "Enhance, restore, and transform images automatically using cutting-edge AI models.",
-    gradient: "from-cyan-500 to-blue-600",
-    href: "/tools",
-  },
-  {
-    icon: "📄",
-    title: "AI PDF Intelligence",
-    description:
-      "Extract, summarize, and analyze PDF content with powerful AI-driven document understanding.",
-    gradient: "from-amber-500 to-orange-600",
-    href: "/tools",
-  },
-];
-
-/* ───────────────────────────────────────────
-   Why SmartDocs
-   ─────────────────────────────────────────── */
-const whyItems = [
-  {
-    icon: "⚡",
-    gradient: "from-amber-400 to-orange-500",
-    title: "Fast & Easy",
-    description:
-      "Create professional documents and designs in minutes, not hours. No learning curve required.",
-  },
-  {
-    icon: "🤖",
-    gradient: "from-purple-500 to-pink-500",
-    title: "AI Powered",
-    description:
-      "Use intelligent AI tools to automate repetitive document and design tasks effortlessly.",
-  },
-  {
-    icon: "📱",
-    gradient: "from-cyan-400 to-blue-500",
-    title: "Works Everywhere",
-    description:
-      "Access your tools and projects seamlessly across desktop, tablet, and mobile devices.",
-  },
-];
-
-/* ───────────────────────────────────────────
-   How It Works
-   ─────────────────────────────────────────── */
+// ── Steps ─────────────────────────────────────────────
 const steps = [
-  { number: "01", title: "Choose a Tool", desc: "Pick from 50+ AI-powered tools for any task." },
+  { number: "01", title: "Choose a Tool", desc: "Pick from 300+ AI-powered tools for any task." },
   { number: "02", title: "Upload or Create", desc: "Upload your file or start from scratch instantly." },
   { number: "03", title: "Download & Share", desc: "Get your polished result and share it worldwide." },
 ];
 
-/* ───────────────────────────────────────────
-   Home Page
-   ─────────────────────────────────────────── */
+const testimonials = [
+  {
+    name: "Aarav Sharma",
+    role: "Student",
+    text: "SmartDocs AI is a lifesaver for my projects. The PDF summary tool alone saves me hours of reading.",
+  },
+  {
+    name: "Priya Singh",
+    role: "Freelancer",
+    text: "I use it daily to create invoices and convert documents for clients. It's incredibly fast and reliable.",
+  },
+  {
+    name: "Rohan Mehta",
+    role: "Business Owner",
+    text: "The AI Command Center is genius. I just type what I need, and it figures out the rest. Highly recommended!",
+  },
+];
+
 export default function Home() {
+  const [commandOpen, setCommandOpen] = useState(false);
+  const { data: session, status } = useSession();
+  const userName = session?.user?.fullName || session?.user?.name || "";
+
+  useEffect(() => {
+    const onOpen = () => setCommandOpen(true);
+    const onClose = () => setCommandOpen(false);
+    window.addEventListener("open-command-palette", onOpen);
+    window.addEventListener("close-command-palette", onClose);
+    return () => {
+      window.removeEventListener("open-command-palette", onOpen);
+      window.removeEventListener("close-command-palette", onClose);
+    };
+  }, []);
+
+  // Build category list from implemented services
+  const categories = [
+    ...new Set(
+      SMARTDOCS_SERVICES.filter((s) => s.implementationStatus === "IMPLEMENTED").map(
+        (s) => s.category
+      )
+    ),
+  ];
+  const categoryIcons: Record<ServiceCategory, string> = {
+    "PDF & Documents": "📄",
+    "AI Chat": "💬",
+    Translation: "🌐",
+    "OCR & Images": "📸",
+    "Data & Tables": "📊",
+    Conversion: "🔄",
+    "Live Information": "📡",
+    "Family Guardian": "👨‍👩‍👧‍👦",
+  };
+
   return (
     <main className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-white">
-      {/* ───── HERO ───── */}
-      <section className="relative min-h-screen flex items-center overflow-hidden pt-20 pb-16 sm:pt-28 sm:pb-20">
-        {/* Animated gradient background */}
-        <div
-          className="absolute inset-0 animate-hero-gradient"
-          style={{
-            background:
-              "linear-gradient(135deg, #0B1C33, #2b1620, #1a0b2e, #0f172a, #0B1C33)",
-            backgroundSize: "400% 400%",
-          }}
-        />
-
-        {/* Grid overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-          }}
-        />
-
-        {/* Glowing orbs */}
+      {/* ── 1. Hero / AI Command Center ─────────────── */}
+      <section className="relative overflow-hidden pt-20 pb-16 sm:pt-28 sm:pb-24">
+        <div className="absolute inset-0 bg-slate-950" />
+        {/* Ambient glow */}
         <div className="pointer-events-none absolute top-1/4 left-1/4 h-72 w-72 rounded-full bg-purple-500/20 blur-[120px] animate-float" />
         <div className="pointer-events-none absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-cyan-500/10 blur-[150px] animate-float-delayed" />
-        <div className="pointer-events-none absolute top-1/3 right-1/3 h-64 w-64 rounded-full bg-pink-500/10 blur-[100px] animate-float-slow" />
 
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
-          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
-            {/* Left content */}
-            <div className="flex-1 text-center lg:text-left">
-              <ScrollReveal>
-                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm px-4 py-2 text-sm text-purple-200">
-                  <span aria-hidden="true">✨</span>
-                  All-in-One AI Document & Design Platform
-                </div>
-              </ScrollReveal>
-
-              <ScrollReveal>
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-white">
-                  Create. Edit. Design.
-                  <span className="mt-2 block text-gradient-cyan-blue-purple">
-                    Powered by AI.
-                  </span>
-                </h1>
-              </ScrollReveal>
-
-              <ScrollReveal>
-                <p className="mx-auto mt-6 max-w-2xl text-base sm:text-lg text-slate-300 leading-relaxed lg:mx-0">
-                  SmartDocs AI helps you create passport photos, ID cards,
-                  resumes, social media designs, PDFs and much more — all in
-                  one powerful platform.
-                </p>
-              </ScrollReveal>
-
-              <ScrollReveal>
-                <div className="mt-8 flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
-                  <Link
-                    href="/signup"
-                    className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-purple-500/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
-                  >
-                    Get Started Free
-                    <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
-                      →
-                    </span>
-                  </Link>
-                  <Link
-                    href="/tools"
-                    className="group inline-flex items-center gap-2 rounded-xl border border-white/20 px-8 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/40 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
-                  >
-                    Explore Tools
-                  </Link>
-                </div>
-              </ScrollReveal>
-
-              {/* Trust Stats */}
-              <ScrollReveal>
-                <div className="mt-12 flex flex-wrap items-center justify-center lg:justify-start gap-x-8 gap-y-3">
-                  {trustStats.map((stat) => (
-                    <div key={stat.label} className="flex items-center gap-2">
-                      <span className="text-2xl font-bold text-white">
-                        {stat.value}
-                      </span>
-                      <span className="text-sm text-slate-400">{stat.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </ScrollReveal>
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-purple-200">
+              <Sparkles className="h-4 w-4" />
+              One AI. Everything you need.
             </div>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight text-white">
+              Tell SmartDocs what you want done.
+            </h1>
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-300">
+              It figures out the rest — picks the tools, runs the workflow, and
+              delivers the result. This is your AI workspace.
+              {status === "authenticated" && userName
+                ? ` Welcome back, ${userName}.`
+                : " Your workspace is ready."}
+            </p>
+          </div>
 
-            {/* Right side - Desktop preview */}
-            <div className="hidden lg:block flex-1 w-full max-w-lg">
-              <ScrollReveal>
-                <div className="relative">
-                  {/* Main preview card */}
-                  <div className="relative rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-2xl">
-                    {/* Toolbar */}
-                    <div className="flex items-center gap-2 mb-6">
-                      <div className="h-3 w-3 rounded-full bg-red-400" />
-                      <div className="h-3 w-3 rounded-full bg-yellow-400" />
-                      <div className="h-3 w-3 rounded-full bg-green-400" />
-                      <span className="ml-3 text-xs text-slate-400">SmartDocs AI Workspace</span>
-                    </div>
+          {/* AI Command Center with Female AI Assistant */}
+          <div className="mt-10">
+            <HomeAICommandCenter />
+          </div>
 
-                    {/* Document preview */}
-                    <div className="rounded-xl bg-white/5 border border-white/10 p-4 mb-4">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-sm">
-                          📄
-                        </div>
-                        <div className="flex-1">
-                          <div className="h-3 w-32 rounded bg-white/10" />
-                          <div className="h-2 w-20 rounded bg-white/5 mt-1" />
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs text-emerald-400">
-                          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse-soft" />
-                          AI Processing
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="h-2 w-full rounded bg-white/10" />
-                        <div className="h-2 w-5/6 rounded bg-white/5" />
-                        <div className="h-2 w-4/6 rounded bg-white/5" />
-                      </div>
-                    </div>
-
-                    {/* Floating cards */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 p-3">
-                        <span className="text-lg">📄</span>
-                        <p className="mt-1 text-xs font-medium text-purple-200">Resume AI</p>
-                      </div>
-                      <div className="rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 p-3">
-                        <span className="text-lg">📕</span>
-                        <p className="mt-1 text-xs font-medium text-cyan-200">PDF Editor</p>
-                      </div>
-                      <div className="rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 p-3">
-                        <span className="text-lg">🎨</span>
-                        <p className="mt-1 text-xs font-medium text-amber-200">Design AI</p>
-                      </div>
-                      <div className="rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 p-3">
-                        <span className="text-lg">🪪</span>
-                        <p className="mt-1 text-xs font-medium text-emerald-200">ID Card</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Floating glow behind */}
-                  <div className="absolute -inset-4 -z-10 rounded-3xl bg-gradient-to-br from-purple-600/20 to-cyan-500/20 blur-3xl" />
-                </div>
-              </ScrollReveal>
-            </div>
+          {/* Ctrl+K hint */}
+          <div className="mt-8 flex justify-center">
+            <button
+              onClick={() => setCommandOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 transition-all hover:bg-white/10"
+            >
+              <Command className="h-4 w-4" />
+              Press Ctrl K to search everything
+            </button>
           </div>
         </div>
       </section>
 
-{/* ───── AI WORKSPACE ENTRY ───── */}
-      <section className="relative overflow-hidden px-4 sm:px-6 py-16 sm:py-24 bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-40 -right-20 h-80 w-80 rounded-full bg-purple-500/15 blur-3xl" />
-          <div className="absolute -bottom-40 -left-20 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
-        </div>
-        <div className="relative mx-auto max-w-5xl text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-purple-200">
-            <span>🤖</span>
-            AI-Powered Workspace
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white">
-            Ask SmartDocs AI Anything
-          </h2>
-          <p className="mt-3 max-w-2xl mx-auto text-slate-300 text-sm sm:text-base">
-            Chat with our AI assistant to create documents, edit images, analyze PDFs, 
-            and get answers instantly. Your intelligent workspace is ready.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/ai-tools"
-              className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-purple-500/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/50 cursor-pointer"
-            >
-              Start with AI
-              <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">→</span>
-            </Link>
-            <Link
-              href="/pricing"
-              className="group inline-flex items-center gap-2 rounded-xl border border-white/20 px-8 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/40 cursor-pointer"
-            >
-              View Plans & Pricing
-            </Link>
-          </div>
-          {/* Feature preview */}
-          <div className="mt-10 grid gap-4 sm:grid-cols-3 max-w-3xl mx-auto">
-            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-left">
-              <span className="text-lg">💬</span>
-              <p className="mt-2 text-sm font-medium text-white">Chat & Create</p>
-              <p className="text-xs text-slate-400 mt-1">Natural language document creation</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-left">
-              <span className="text-lg">📄</span>
-              <p className="mt-2 text-sm font-medium text-white">Document AI</p>
-              <p className="text-xs text-slate-400 mt-1">Analyze, summarize, and extract</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 text-left">
-              <span className="text-lg">📎</span>
-              <p className="mt-2 text-sm font-medium text-white">File Upload</p>
-              <p className="text-xs text-slate-400 mt-1">Upload and process documents</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ───── EVERYTHING YOU NEED ───── */}
-      <section className="relative bg-slate-50 dark:bg-slate-900/50 px-4 sm:px-6 py-20 sm:py-28">
+      {/* ── 2. "What do you want to do?" launcher ──── */}
+      <section className="relative bg-slate-50 dark:bg-slate-900/50 px-4 sm:px-6 py-20 sm:py-24">
         <div className="mx-auto max-w-7xl">
           <ScrollReveal>
-            <div className="text-center">
+            <div className="text-center mb-10">
               <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
-                Everything You Need
+                What do you want to do today?
               </h2>
               <p className="mt-3 text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
-                Powerful tools for documents, images and designs.
+                Pick a card to jump straight in — or let the AI assistant handle it.
               </p>
             </div>
           </ScrollReveal>
 
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {tools.map((tool, i) => (
-              <ScrollReveal key={tool.title}>
-                <Link
-                  href={tool.href}
-                  className="group block rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-xl hover:shadow-purple-100/50 dark:hover:shadow-purple-900/20 cursor-pointer"
-                >
-                  <div
-                    aria-hidden="true"
-                    className={`flex h-12 w-12 items-center justify-center rounded-xl text-sm font-bold ${tool.accent}`}
-                  >
-                    {tool.badge}
-                  </div>
-
-                  <h3 className="mt-5 text-lg font-semibold text-slate-900 dark:text-white">
-                    {tool.title}
-                  </h3>
-
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                    {tool.description}
-                  </p>
-
-                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-purple-600 dark:text-purple-400 transition-all duration-300 group-hover:gap-2">
-                    Try Now
-                    <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
-                      →
-                    </span>
-                  </span>
-                </Link>
-              </ScrollReveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ───── AI TOOLS SHOWCASE ───── */}
-      <section className="relative px-4 sm:px-6 py-20 sm:py-28 overflow-hidden">
-        {/* Dark background */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(135deg, #0B1C33, #1a0b2e, #0f172a, #0B1C33)",
-            backgroundSize: "400% 400%",
-          }}
-        />
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute top-1/3 left-1/4 h-64 w-64 rounded-full bg-purple-500/10 blur-[100px]" />
-          <div className="absolute bottom-1/3 right-1/4 h-64 w-64 rounded-full bg-cyan-500/10 blur-[100px]" />
-        </div>
-
-        <div className="relative mx-auto max-w-7xl">
-          <ScrollReveal>
-            <div className="text-center">
-              <h2 className="text-3xl sm:text-4xl font-bold text-white">
-                Powerful AI Tools. One Smart Workspace.
-              </h2>
-              <p className="mt-3 max-w-2xl mx-auto text-purple-200/70">
-                Transform the way you create, edit, and manage documents with
-                intelligent AI-powered tools.
-              </p>
-            </div>
-          </ScrollReveal>
-
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {aiShowcaseCards.map((card) => (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
+            {LAUNCHER_CARDS.map((card) => (
               <ScrollReveal key={card.title}>
                 <Link
                   href={card.href}
-                  className="group block rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-8 transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:-translate-y-1 cursor-pointer"
+                  className="group flex h-full flex-col items-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/10 dark:border-slate-800 dark:bg-slate-900"
                 >
-                  <div
-                    className={`inline-flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br ${card.gradient} text-2xl shadow-lg`}
-                  >
-                    {card.icon}
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-3xl transition-transform duration-300 group-hover:scale-110 dark:bg-slate-800">
+                    {card.emoji}
                   </div>
-
-                  <h3 className="mt-6 text-xl font-semibold text-white">
+                  <h3 className="mt-4 font-semibold text-slate-900 dark:text-white">
                     {card.title}
                   </h3>
-
-                  <p className="mt-3 text-sm text-slate-300 leading-relaxed">
-                    {card.description}
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {card.desc}
                   </p>
-
-                  <span className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-purple-300 transition-all duration-300 group-hover:gap-2">
-                    Explore Tool
-                    <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
-                      →
-                    </span>
+                  <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-purple-600 dark:text-purple-400 opacity-0 transition-all duration-300 group-hover:opacity-100">
+                    Open <ArrowRight className="h-3.5 w-3.5" />
                   </span>
                 </Link>
               </ScrollReveal>
@@ -508,39 +223,52 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ───── WHY SMARTDOCS AI ───── */}
-      <section className="bg-slate-50 dark:bg-slate-900/50 px-4 sm:px-6 py-20 sm:py-28">
-        <div className="mx-auto max-w-6xl">
+      {/* ── 3. Service Categories ───────────────────── */}
+      <section className="px-4 sm:px-6 py-20 sm:py-24">
+        <div className="mx-auto max-w-7xl">
           <ScrollReveal>
-            <h2 className="text-center text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
-              Why SmartDocs AI?
-            </h2>
+            <div className="text-center mb-10">
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
+                300+ Tools. One AI Agent.
+              </h2>
+              <p className="mt-3 text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
+                From complex document analysis to simple image edits, our AI
+                understands your needs and automatically selects the right tool.
+              </p>
+            </div>
           </ScrollReveal>
 
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
-            {whyItems.map((item) => (
-              <ScrollReveal key={item.title}>
-                <div className="text-center">
-                  <div
-                    className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${item.gradient} text-2xl text-white shadow-lg`}
-                  >
-                    {item.icon}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {categories.map((category) => (
+              <ScrollReveal key={category}>
+                <div className="group rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-500/10">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-3xl transition-transform duration-300 group-hover:scale-110">
+                    {categoryIcons[category] || "✨"}
                   </div>
-                  <h3 className="mt-6 text-xl font-semibold text-slate-900 dark:text-white">
-                    {item.title}
+                  <h3 className="mt-4 font-semibold text-slate-900 dark:text-white">
+                    {category}
                   </h3>
-                  <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                    {item.description}
-                  </p>
                 </div>
               </ScrollReveal>
             ))}
           </div>
+
+          <div className="text-center mt-10">
+            <Link
+              href="/services"
+              className="font-semibold text-purple-600 dark:text-purple-400 hover:underline"
+            >
+              Explore all services →
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* ───── HOW IT WORKS ───── */}
-      <section className="px-4 sm:px-6 py-20 sm:py-28">
+      {/* ── 4. App & Website Blocking ───────────────── */}
+      <AppBlockingSection />
+
+      {/* ── 5. How it works ─────────────────────────── */}
+      <section className="px-4 sm:px-6 py-20 sm:py-24">
         <div className="mx-auto max-w-5xl">
           <ScrollReveal>
             <h2 className="text-center text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
@@ -549,13 +277,11 @@ export default function Home() {
           </ScrollReveal>
 
           <div className="relative mt-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-8 md:gap-0">
-            {/* Connecting line (desktop) */}
             <div className="hidden md:block absolute top-1/2 left-[calc(16.66%+2rem)] right-[calc(16.66%+2rem)] h-0.5 bg-gradient-to-r from-purple-400 via-cyan-400 to-purple-400 -translate-y-1/2" />
-
-            {steps.map((step, i) => (
+            {steps.map((step) => (
               <ScrollReveal key={step.number}>
                 <div className="relative flex flex-col items-center text-center md:w-1/3 px-4">
-                  <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-cyan-500 text-white text-lg font-bold shadow-xl shadow-purple-500/30">
+                  <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-cyan-500 text-white text-lg font-bold shadow-xl shadow-purple-500/30 mb-6">
                     {step.number}
                   </div>
                   <h3 className="mt-6 text-lg font-semibold text-slate-900 dark:text-white">
@@ -571,17 +297,196 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ───── CTA BANNER ───── */}
-      <section className="px-4 sm:px-6 py-16 sm:py-24">
+      {/* ── 6. Testimonials ─────────────────────────── */}
+      <section className="bg-slate-50 dark:bg-slate-900/50 px-4 sm:px-6 py-20 sm:py-24">
+        <div className="mx-auto max-w-5xl text-center">
+          <ScrollReveal>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
+              Loved by Professionals and Students
+            </h2>
+            <p className="mt-3 text-slate-500 dark:text-slate-400">
+              Don&apos;t just take our word for it. Here&apos;s what our users are saying.
+            </p>
+          </ScrollReveal>
+
+          <div className="mt-12 grid gap-8 md:grid-cols-3">
+            {testimonials.map((t) => (
+              <ScrollReveal key={t.name}>
+                <figure className="bg-white dark:bg-slate-800/80 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-1 text-amber-400">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-current" />
+                    ))}
+                  </div>
+                  <blockquote className="mt-4 text-slate-600 dark:text-slate-300 text-left">
+                    &ldquo;{t.text}&rdquo;
+                  </blockquote>
+                  <figcaption className="mt-4 text-left">
+                    <div className="font-semibold text-slate-900 dark:text-white">
+                      {t.name}
+                    </div>
+                    <div className="text-slate-500 dark:text-slate-400 text-sm">
+                      {t.role}
+                    </div>
+                  </figcaption>
+                </figure>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 7. Pricing Preview ──────────────────────── */}
+      <section className="px-4 sm:px-6 py-20 sm:py-24">
+        <div className="mx-auto max-w-6xl">
+          <ScrollReveal>
+            <div className="text-center mb-10">
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
+                Simple, Transparent Pricing
+              </h2>
+              <p className="mt-3 text-slate-500 dark:text-slate-400">
+                Start free, upgrade when you need more power. All plans include
+                core AI features.
+              </p>
+            </div>
+          </ScrollReveal>
+
+          <div className="grid gap-6 md:grid-cols-4">
+            {/* Free */}
+            <div className="flex flex-col rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-xl">
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Free</h3>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Perfect for trying SmartDocs</p>
+              <div className="mt-6 flex items-baseline">
+                <span className="text-5xl font-extrabold text-slate-900 dark:text-white">Free</span>
+              </div>
+              <ul className="mt-8 flex-1 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                <li>✓ 100 AI credits/month</li>
+                <li>✓ Basic AI features</li>
+                <li>✓ 1-hour chat history</li>
+              </ul>
+              <Link
+                href="/signup"
+                className="mt-10 w-full rounded-xl border border-slate-300 dark:border-slate-700 py-3 text-center font-semibold text-slate-900 dark:text-white transition-all hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Get Started
+              </Link>
+            </div>
+
+            {/* Pro (highlighted) */}
+            <div className="relative flex flex-col rounded-3xl border-2 border-purple-500 bg-gradient-to-br from-slate-900 to-slate-800 p-8 shadow-xl shadow-purple-500/10">
+              <div className="absolute -top-3 right-4 rounded-full bg-purple-600 px-3 py-1 text-xs font-semibold text-white">
+                Most Popular
+              </div>
+              <h3 className="text-2xl font-bold text-white">Pro</h3>
+              <p className="mt-2 text-sm text-slate-400">For power users</p>
+              <div className="mt-6 flex items-baseline">
+                <span className="text-5xl font-extrabold text-white">₹499</span>
+                <span className="ml-1 text-xl font-semibold text-slate-400">/month</span>
+              </div>
+              <ul className="mt-8 flex-1 space-y-3 text-sm text-slate-300">
+                <li>✓ 2,000 AI credits/month</li>
+                <li>✓ Document AI + OCR</li>
+                <li>✓ 10 GB storage</li>
+                <li>✓ Family Guardian</li>
+              </ul>
+              <Link
+                href="/checkout?plan=pro"
+                className="mt-10 w-full rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 py-3 text-center font-semibold text-white shadow-lg shadow-purple-500/25 transition-all hover:scale-105"
+              >
+                Upgrade to Pro
+              </Link>
+            </div>
+
+            {/* Pro+ */}
+            <div className="flex flex-col rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-xl">
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Pro+</h3>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Maximum power</p>
+              <div className="mt-6 flex items-baseline">
+                <span className="text-5xl font-extrabold text-slate-900 dark:text-white">₹999</span>
+                <span className="ml-1 text-xl font-semibold text-slate-400">/month</span>
+              </div>
+              <ul className="mt-8 flex-1 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                <li>✓ 10,000 AI credits/month</li>
+                <li>✓ 50 GB storage</li>
+                <li>✓ Team features</li>
+                <li>✓ Priority support</li>
+              </ul>
+              <Link
+                href="/checkout?plan=pro_plus"
+                className="mt-10 w-full rounded-xl border border-slate-300 dark:border-slate-700 py-3 text-center font-semibold text-slate-900 dark:text-white transition-all hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Upgrade to Pro+
+              </Link>
+            </div>
+
+            {/* Enterprise */}
+            <div className="flex flex-col rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-xl">
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Enterprise</h3>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Custom solutions</p>
+              <div className="mt-6 flex items-baseline">
+                <span className="text-5xl font-extrabold text-slate-900 dark:text-white">Custom</span>
+              </div>
+              <ul className="mt-8 flex-1 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                <li>✓ Unlimited AI credits</li>
+                <li>✓ 1,000 GB storage</li>
+                <li>✓ Admin controls</li>
+                <li>✓ Multiple families</li>
+              </ul>
+              <a
+                href="mailto:sales@smartdocs.ai"
+                className="mt-10 w-full rounded-xl border border-slate-300 dark:border-slate-700 py-3 text-center font-semibold text-slate-900 dark:text-white transition-all hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Contact Sales
+              </a>
+            </div>
+          </div>
+
+          {/* Custom Plan CTA (prominent, right after pricing) */}
+          <ScrollReveal>
+            <div className="relative mt-10 overflow-hidden rounded-3xl border border-purple-500/30 bg-gradient-to-r from-purple-600/20 via-cyan-500/10 to-purple-600/20 p-8 sm:p-10 text-center">
+              <div className="pointer-events-none absolute inset-0">
+                <div className="absolute -top-20 -left-20 h-52 w-52 rounded-full bg-purple-500/20 blur-3xl" />
+                <div className="absolute -bottom-20 -right-20 h-52 w-52 rounded-full bg-cyan-400/15 blur-3xl" />
+              </div>
+              <div className="relative">
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+                  Need a Custom Plan?
+                </h2>
+                <p className="mx-auto mt-3 max-w-2xl text-slate-600 dark:text-slate-300">
+                  Contact us for enterprise pricing, team accounts, and custom
+                  requirements.
+                </p>
+                <a
+                  href="mailto:sales@smartdocs.ai"
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 px-8 py-3.5 font-semibold text-white shadow-lg shadow-purple-500/25 transition-all hover:scale-105 hover:shadow-purple-500/40"
+                >
+                  Contact Sales
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
+          </ScrollReveal>
+
+          <div className="mt-10 text-center">
+            <Link
+              href="/pricing"
+              className="font-semibold text-purple-600 dark:text-purple-400 hover:underline"
+            >
+              View full pricing &amp; comparison →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 8. Footer CTA ───────────────────────────── */}
+      <section className="px-4 sm:px-6 py-16 sm:py-20">
         <div className="mx-auto max-w-5xl">
           <ScrollReveal>
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 via-red-500 to-rose-500 px-6 sm:px-12 py-16 text-center text-white shadow-2xl">
-              {/* Background decoration */}
               <div className="pointer-events-none absolute inset-0">
                 <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
                 <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
               </div>
-
               <div className="relative">
                 <h2 className="text-3xl sm:text-4xl font-bold">
                   Start Creating with SmartDocs AI
@@ -593,7 +498,7 @@ export default function Home() {
                 <div className="mt-8 flex justify-center">
                   <Link
                     href="/signup"
-                    className="group inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-semibold text-orange-600 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-white/30 animate-pulse-soft cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                    className="group inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-semibold text-orange-600 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-white/30"
                   >
                     Get Started Free
                     <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
@@ -607,24 +512,26 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ───── FOOTER ───── */}
+      {/* ── Footer ──────────────────────────────────── */}
       <footer className="border-t border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-8">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 text-center text-sm text-slate-500 dark:text-slate-400 md:flex-row md:text-left">
           <p>© 2026 SmartDocs AI. All rights reserved.</p>
-
           <nav className="flex justify-center gap-6" aria-label="Footer navigation">
-            <Link href="/about" className="hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer">
+            <Link href="/about" className="hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
               Privacy
             </Link>
-            <Link href="/about" className="hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer">
+            <Link href="/about" className="hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
               Terms
             </Link>
-            <Link href="/about" className="hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer">
+            <Link href="/about" className="hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
               Contact
             </Link>
           </nav>
         </div>
       </footer>
+
+      {/* Command Palette */}
+      {commandOpen && <CommandPalette />}
     </main>
   );
 }

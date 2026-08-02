@@ -1,4 +1,5 @@
 import { PlanId, FeatureId, getPlan } from "./plan-config";
+export type { PlanId, FeatureId };
 
 /**
  * Checks if a given plan has access to a specific feature.

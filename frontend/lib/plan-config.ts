@@ -9,10 +9,12 @@ export type FeatureId =
   | "BASIC_AI_FEATURES"
   | "PDF_TOOLS"
   | "OCR_SCANNER"
+  | "OCR"
   | "PHOTO_TOOL"
   | "BASIC_IMAGE_ANALYSIS"
   | "ADVANCED_AI"
   | "DOCUMENT_AI"
+  | "DOCUMENT_TRANSLATION"
   | "AUTOMATION_FEATURES"
   | "FAMILY_GUARDIAN_ACCESS"
   | "ADVANCED_PHOTO_AI"
@@ -24,7 +26,8 @@ export type FeatureId =
   | "PRIORITY_SUPPORT"
   | "ENTERPRISE_ADMIN_CONTROLS"
   | "MULTIPLE_FAMILIES"
-  | "ADVANCED_ANALYTICS";
+  | "ADVANCED_ANALYTICS"
+  | "DOCUMENT_CONVERSION";
 
 export interface PlanLimits {
   storageGB: number;
@@ -64,7 +67,7 @@ export const PLANS: Plan[] = [
     features: ["AI_CHAT_UNLIMITED", "CHAT_HISTORY_7D", "PDF_TOOLS", "OCR_SCANNER", "PHOTO_TOOL", "BASIC_IMAGE_ANALYSIS"],
     limits: { storageGB: 2, aiCreditsMonthly: 500, maxChatHistoryDays: 7 },
   },
-  {
+{
     id: "pro",
     name: "Pro",
     price: 499,
@@ -72,10 +75,11 @@ export const PLANS: Plan[] = [
     billingCycle: "monthly",
     features: [
       "ADVANCED_AI", "DOCUMENT_AI", "AUTOMATION_FEATURES", "FAMILY_GUARDIAN_ACCESS",
-      "ADVANCED_PHOTO_AI", "IMAGE_TO_DOCUMENT_CONVERSION", "TABLE_EXTRACTION", "CHAT_HISTORY_UNLIMITED"
+      "ADVANCED_PHOTO_AI", "IMAGE_TO_DOCUMENT_CONVERSION", "TABLE_EXTRACTION",
+      "DOCUMENT_CONVERSION", "CHAT_HISTORY_UNLIMITED",
+      "OCR", "DOCUMENT_TRANSLATION"
     ],
     limits: { storageGB: 10, aiCreditsMonthly: 2000, maxChatHistoryDays: 'unlimited' },
-    isPopular: true,
   },
   {
     id: "pro_plus",
@@ -83,8 +87,14 @@ export const PLANS: Plan[] = [
     price: 999,
     currency: "INR",
     billingCycle: "monthly",
-    features: ["PREMIUM_AI_FEATURES", "MORE_AI_CREDITS", "TEAM_FEATURES", "PRIORITY_SUPPORT", "CHAT_HISTORY_UNLIMITED"],
+    features: [
+      "PREMIUM_AI_FEATURES", "MORE_AI_CREDITS", "TEAM_FEATURES", "PRIORITY_SUPPORT",
+      "CHAT_HISTORY_UNLIMITED", "DOCUMENT_AI", "AUTOMATION_FEATURES",
+      "FAMILY_GUARDIAN_ACCESS", "ADVANCED_PHOTO_AI", "DOCUMENT_TRANSLATION",
+      "DOCUMENT_CONVERSION", "OCR", "TABLE_EXTRACTION"
+    ],
     limits: { storageGB: 50, aiCreditsMonthly: 10000, maxChatHistoryDays: 'unlimited' },
+    isPopular: true,
   },
   {
     id: "enterprise",
