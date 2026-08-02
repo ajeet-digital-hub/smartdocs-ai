@@ -32,7 +32,7 @@ async function dbConnect(): Promise<Mongoose> {
     const opts = {
       bufferCommands: false,
     };
-    const dbName = new URL(MONGODB_URI).pathname.substring(1) || process.env.MONGODB_DB_NAME || '(Not Set)';
+    const dbName = MONGODB_URI ? (new URL(MONGODB_URI).pathname.substring(1) || process.env.MONGODB_DB_NAME || '(Not Set)') : '(Not Set)';
     console.log(`[dbConnect] MONGODB_URI exists: ${!!MONGODB_URI}`);
     console.log(`[dbConnect] Attempting to connect to MongoDB... DB: ${dbName}`);
     try {

@@ -106,11 +106,11 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       console.log("[NextAuth Session Callback] Populating session with token data.");
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.fullName = token.fullName as string;
-        session.user.image = token.picture as string;
-        session.user.emailVerified = token.emailVerified as Date | null;
-        session.user.hasSeenWelcome = token.hasSeenWelcome as boolean;
+        (session.user as any).id = token.id as string;
+        (session.user as any).fullName = token.fullName as string;
+        (session.user as any).image = token.picture as string;
+        (session.user as any).emailVerified = token.emailVerified as Date | null;
+        (session.user as any).hasSeenWelcome = token.hasSeenWelcome as boolean;
       }
       return session;
     },

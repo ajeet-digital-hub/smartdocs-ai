@@ -5,8 +5,8 @@ export interface IChatMessage {
   content: string;
   citations?: {
     pageNumber: number;
-    documentId: mongoose.Types.ObjectId;
-    documentName: string;
+    documentId: string; // Storing as string for simplicity
+    chunkId: string;
   }[];
   createdAt: Date;
 }
@@ -16,6 +16,7 @@ export interface IAiChatSession extends Document {
   title: string;
   documentIds: mongoose.Types.ObjectId[]; // References to original file uploads
   messages: IChatMessage[];
+  pendingPlan?: any; // Stores an incomplete execution plan for follow-up questions
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +27,7 @@ const AiChatSessionSchema = new Schema<IAiChatSession>(
     title: { type: String, required: true, default: "New Chat" },
     documentIds: [{ type: Schema.Types.ObjectId, ref: "File" }], // Assuming a generic 'File' model for uploads
     messages: [{ type: Schema.Types.Mixed }], // Storing IChatMessage objects
+    pendingPlan: { type: Schema.Types.Mixed, default: null },
   },
   { timestamps: true }
 );
