@@ -1,194 +1,163 @@
 "use client";
 
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-
-interface ChildAnalytics {
-  childId: string;
-  name: string;
-  age: number;
-  avatar?: string;
-  currentStatus: string;
-  points: number;
-  studyStreak: number;
-  schedules: number;
-  blockedWebsites: number;
-  totalUnlockRequests: number;
-  pendingUnlockRequests: number;
-  totalRewards: number;
-  studyMinutes: number;
-  completedRewards: number;
-}
+import * as familyGuardianApi from "@/lib/family-guardian-api";
+import LoadingState from "@/app/family-guardian/components/LoadingState";
+import EmptyState from "@/app/family-guardian/components/EmptyState";
+import StatCard from "@/app/family-guardian/components/StatCard";
+import { motion } from "framer-motion";
+import { Clock, Shield, BookOpen, Lock, Smartphone } from "lucide-react";
 
 interface AnalyticsData {
-  totalChildren: number;
-  activeSchedules: number;
-  blockedWebsites: number;
-  pendingUnlocks: number;
-  activeRewards: number;
-  completedRewards: number;
-  totalStudyMinutes: number;
-  recentActivity: number;
-  children: ChildAnalytics[];
+  totalScreenTime: number;
+  mostUsedApps: {
+    appName: string;
+    usageTime: number;
+  }[];
+  blockedAttempts: number;
+  unlockRequests: number;
+  studyProgress: number;
+  devicesOnline: number;
+  screenTimeByDay: {
+    day: string;
+    minutes: number;
+  }[];
 }
 
-export default function AnalyticsPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+export default function ChildAnalyticsPage() {
+  const params = useParams();
+  const childId = params.childId as string;
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedChild, setSelectedChild] = useState<string | null>(null);
-
-  async function fetchAnalytics() {
-    try {
-      const res = await fetch("/api/family/analytics");
-      const data = await res.json();
-      if (data.ok) setAnalytics(data.analytics);
-    } catch {
-      setError("Failed to load analytics");
-    }
-  }
+  const [period, setPeriod] = useState<"day" | "week" | "month">("week");
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-      return;
+    async function fetchAnalytics() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await familyGuardianApi.getAnalytics(childId, { period }); // Pass childId directly
+        if (data.ok) {
+          setAnalyticsData(data.analytics);
+        } else {
+          setError(data.error || "Failed to load analytics data.");
+        }
+      } catch (err) {
+        setError("Failed to connect to the server.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     }
-    if (status !== "authenticated") return;
     fetchAnalytics();
-  }, [status, router]);
+  }, [childId, period]);
 
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#141018" }}>
-        <div className="text-white text-lg">Loading...</div>
-      </div>
-    );
+  if (loading) {
+    return <LoadingState />;
   }
 
-  const formatMinutes = (minutes: number) => {
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return `${h}h ${m}m`;
-  };
+  if (error) {
+    return <div className="bg-red-500/20 text-red-400 p-3 rounded-lg mb-4">{error}</div>;
+  }
 
   return (
-    <div className="min-h-screen" style={{ background: "#141018" }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        <div className="mb-8">
-          <Link href="/dashboard/family-guardian" className="text-slate-400 hover:text-white text-sm mb-2 inline-block">
-            ← Back to Family Guardian
-          </Link>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Analytics</h1>
-          <p className="text-slate-400 mt-1">Activity and screen time analytics</p>
-        </div>
+    <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <h2 className="text-2xl font-semibold mb-4">Analytics for Child ID: {childId}</h2>
 
-        {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>
-        )}
-
-        {/* Note about analytics */}
-        <div className="mb-6 p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-sm">
-          <strong>Note:</strong> Analytics data is based on backend policies, unlock requests, and reward goals. 
-          Real screen time data requires browser extension or device app integration. This dashboard shows 
-          policy-based metrics and activity logs.
-        </div>
-
-        {!analytics ? (
-          <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-12 text-center">
-            <div className="text-5xl mb-4">📊</div>
-            <h3 className="text-xl font-semibold text-white mb-2">No Data Yet</h3>
-            <p className="text-slate-400">Analytics will appear once you add children and configure policies.</p>
-          </div>
-        ) : (
-          <>
-            {/* Overview Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
-                <div className="text-2xl font-bold text-white">{analytics.totalChildren}</div>
-                <div className="text-xs text-slate-400">Children</div>
-              </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
-                <div className="text-2xl font-bold text-cyan-400">{analytics.activeSchedules}</div>
-                <div className="text-xs text-slate-400">Schedules</div>
-              </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
-                <div className="text-2xl font-bold text-red-400">{analytics.blockedWebsites}</div>
-                <div className="text-xs text-slate-400">Blocked Sites</div>
-              </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
-                <div className="text-2xl font-bold text-yellow-400">{analytics.pendingUnlocks}</div>
-                <div className="text-xs text-slate-400">Pending Unlocks</div>
-              </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
-                <div className="text-2xl font-bold text-green-400">{formatMinutes(analytics.totalStudyMinutes)}</div>
-                <div className="text-xs text-slate-400">Total Study Time</div>
-              </div>
-              <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-center">
-                <div className="text-2xl font-bold text-purple-400">{analytics.recentActivity}</div>
-                <div className="text-xs text-slate-400">7-Day Activity</div>
-              </div>
-            </div>
-
-            {/* Per-Child Analytics */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold text-white">Per Child Breakdown</h2>
-              {analytics.children.map((child) => {
-                const isSelected = selectedChild === child.childId;
-                return (
-                  <div
-                    key={child.childId}
-                    className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden"
-                  >
-                    <button
-                      onClick={() => setSelectedChild(isSelected ? null : child.childId)}
-                      className="w-full p-4 flex items-center justify-between hover:bg-white/5 transition-all cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-cyan-400 flex items-center justify-center text-white font-bold">
-                          {child.avatar || child.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="text-left">
-                          <h3 className="text-white font-semibold">{child.name}</h3>
-                          <p className="text-slate-400 text-sm">Age {child.age} • {child.currentStatus}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="text-green-400">{formatMinutes(child.studyMinutes)} study</span>
-                        <span className="text-slate-400">{child.points} pts</span>
-                        <span className={`transition-transform ${isSelected ? "rotate-180" : ""}`}>▼</span>
-                      </div>
-                    </button>
-
-                    {isSelected && (
-                      <div className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="bg-white/5 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-cyan-400">{child.schedules}</div>
-                          <div className="text-xs text-slate-400">Schedules</div>
-                        </div>
-                        <div className="bg-white/5 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-red-400">{child.blockedWebsites}</div>
-                          <div className="text-xs text-slate-400">Blocked Sites</div>
-                        </div>
-                        <div className="bg-white/5 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-yellow-400">{child.pendingUnlockRequests}</div>
-                          <div className="text-xs text-slate-400">Pending</div>
-                        </div>
-                        <div className="bg-white/5 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-purple-400">{child.completedRewards}</div>
-                          <div className="text-xs text-slate-400">Rewards Done</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
+      <div className="mb-6 flex space-x-2">
+        <button
+          onClick={() => setPeriod("day")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium ${period === "day" ? "bg-purple-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"}`}
+        >
+          Daily
+        </button>
+        <button
+          onClick={() => setPeriod("week")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium ${period === "week" ? "bg-purple-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"}`}
+        >
+          Weekly
+        </button>
+        <button
+          onClick={() => setPeriod("month")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium ${period === "month" ? "bg-purple-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"}`}
+        >
+          Monthly
+        </button>
       </div>
+
+      {!analyticsData || (!analyticsData.totalScreenTime && analyticsData.mostUsedApps?.length === 0 && analyticsData.blockedAttempts === 0 && analyticsData.unlockRequests === 0) ? (
+        <EmptyState
+          icon="📊"
+          title="No Analytics Data Yet"
+          description="Connect a device and ensure it's reporting usage to see analytics for this child."
+        />
+      ) : analyticsData ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <StatCard
+              label="Total Screen Time"
+              value={`${analyticsData.totalScreenTime || 0} min`}
+              icon={Clock}
+              color="purple"
+            />
+            <StatCard
+              label="Blocked Attempts"
+              value={analyticsData.blockedAttempts || 0}
+              icon={Shield}
+              color="red"
+            />
+            <StatCard
+              label="Unlock Requests"
+              value={analyticsData.unlockRequests || 0}
+              icon={Lock}
+              color="orange"
+            />
+            <StatCard
+              label="Devices Online"
+              value={analyticsData.devicesOnline || 0}
+              icon={Smartphone}
+              color="green"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Screen Time Chart Placeholder */}
+            <div className="bg-gray-700 p-4 rounded-lg h-64 flex items-center justify-center text-gray-400">
+              Screen Time Chart ({period}) - Data Visualization Coming Soon
+            </div>
+
+            {/* Most Used Apps */}
+            <div className="bg-gray-700 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold mb-3">Most Used Apps</h3>
+              {analyticsData.mostUsedApps && analyticsData.mostUsedApps.length > 0 ? (
+                <ul className="space-y-2">
+                  {analyticsData.mostUsedApps.map((app: any, index: number) => (
+                    <li key={index} className="flex justify-between items-center text-gray-300">
+                      <span>{app.appName}</span>
+                      <span className="font-medium">{app.usageTime} min</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-400 text-sm">No app usage data available.</p>
+              )}
+            </div>
+
+            {/* Activity Timeline Placeholder */}
+            <div className="lg:col-span-2 bg-gray-700 p-4 rounded-lg h-48 flex items-center justify-center text-gray-400">
+              Device Activity Timeline - Data Visualization Coming Soon
+            </div>
+          </div>
+        </motion.div>
+      ) : (
+        <p className="text-gray-400">No analytics data available yet. Ensure a device is connected and reporting usage.</p>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import bcrypt from "bcrypt"
 import {
   createContactKey,
   otpStore,
@@ -9,13 +10,15 @@ import {
 } from "./store"
 import {
   generateOtpCode,
-  hashPassword,
+
   isValidCountryCode,
   isValidEmail,
   isValidFullName,
   isValidPassword,
   normalizePhoneNumber,
 } from "../utils"
+
+const SALT_ROUNDS = 12
 
 function badRequest(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: message }, { status })
@@ -135,6 +138,7 @@ export async function POST(request: Request) {
     }
 
     const channel = body.via === "whatsapp" ? "whatsapp" : "sms"
+    const passwordHash = purpose === "signup" ? await bcrypt.hash(body.password || "", SALT_ROUNDS) : undefined
 
     try {
       await sendPhoneOtp(normalizedPhone, channel)
@@ -153,7 +157,7 @@ export async function POST(request: Request) {
       requestCount: requestCount + 1,
       verified: false,
       fullName: purpose === "signup" ? body.fullName?.trim() : undefined,
-      passwordHash: purpose === "signup" ? hashPassword(body.password || "") : undefined,
+      passwordHash,
       accountCreated: purpose === "signup" ? false : undefined,
     })
 
@@ -195,6 +199,7 @@ export async function POST(request: Request) {
   }
 
   const code = generateOtpCode()
+  const passwordHash = purpose === "signup" ? await bcrypt.hash(body.password || "", SALT_ROUNDS) : undefined
   const entry = {
     contact: email,
     contactType: "email" as const,
@@ -207,36 +212,20 @@ export async function POST(request: Request) {
     requestCount: requestCount + 1,
     verified: false,
     fullName: purpose === "signup" ? body.fullName?.trim() : undefined,
-    passwordHash: purpose === "signup" ? hashPassword(body.password || "") : undefined,
+    passwordHash,
     accountCreated: purpose === "signup" ? false : undefined,
   }
+  try {
+    await sendOtpEmail(email, code)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to send OTP email."
+    return badRequest(message, 500)
+  }
+
   otpStore.set(contactKey, entry)
-
-  // try {
-  //   await sendOtpEmail(email, code)
-  // } catch (error) {
-  //   otpStore.delete(contactKey)
-  //   const message = error instanceof Error ? error.message : "Failed to send OTP email."
-  //   return badRequest(message, 500)
-  // }
-  
-  // HACK: Temporarily bypass email sending for testing
-  console.log(`OTP for ${email}: ${code}`);
-
-  const responsePayload: {
-    ok: true
-    cooldown: number
-    expiresIn: number
-    dev?: { code: string }
-  } = {
+  return NextResponse.json({
     ok: true,
     cooldown: RESEND_COOLDOWN / 1000,
     expiresIn: OTP_TTL / 1000,
-  }
-
-  if (process.env.NODE_ENV === "development") {
-    responsePayload.dev = { code }
-  }
-
-  return NextResponse.json(responsePayload)
+  })
 }

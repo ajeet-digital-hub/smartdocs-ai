@@ -67,8 +67,8 @@ export default function SchedulesPage() {
     try {
       setLoading(true);
       const [schedulesRes, childrenRes] = await Promise.all([
-        fetch("/api/family/schedules"),
-        fetch("/api/family/children"),
+        fetch("/api/family-guardian/schedules"),
+        fetch("/api/family-guardian/children"),
       ]);
       const schedulesData = await schedulesRes.json();
       const childrenData = await childrenRes.json();
@@ -96,7 +96,7 @@ export default function SchedulesPage() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/family/schedules", {
+      const res = await fetch("/api/family-guardian/schedules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -122,7 +122,7 @@ export default function SchedulesPage() {
 
   async function toggleActive(scheduleId: string, currentActive: boolean) {
     try {
-      const res = await fetch(`/api/family/schedules/${scheduleId}`, {
+      const res = await fetch(`/api/family-guardian/schedules/${scheduleId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !currentActive }),
@@ -137,7 +137,7 @@ export default function SchedulesPage() {
   async function handleDelete(scheduleId: string) {
     if (!confirm("Delete this schedule?")) return;
     try {
-      const res = await fetch(`/api/family/schedules/${scheduleId}`, { method: "DELETE" });
+      const res = await fetch(`/api/family-guardian/schedules/${scheduleId}`, { method: "DELETE" });
       const data = await res.json();
       if (data.ok) await fetchData();
     } catch {

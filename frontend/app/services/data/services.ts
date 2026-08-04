@@ -225,6 +225,8 @@ export const services: Service[] = [
   { id: "secure-file-sharing", name: "Secure File Sharing", description: "Share files with end-to-end encryption", category: "Security", icon: "🔗", tags: ["share", "secure", "file"], popular: false, trending: false, new: false },
   { id: "two-factor-auth", name: "2FA Manager", description: "Manage two-factor authentication codes", category: "Security", icon: "📱", tags: ["2fa", "authentication", "security"], popular: false, trending: false, new: false },
   { id: "vpn-generator", name: "VPN Config Generator", description: "Generate VPN configuration files", category: "Security", icon: "🛡️", tags: ["vpn", "config", "security"], popular: false, trending: false, new: false },
+  { id: "family-guardian", name: "Family Guardian", description: "Organize family documents and keep important information protected", category: "Security", icon: "👨‍👩‍👧‍👦", tags: ["family", "guardian", "security", "documents"], popular: false, trending: false, new: false },
+  { id: "hospital-doctor-recommendation", name: "Hospital & Doctor Recommendation", description: "Find the best hospitals, clinics, doctors, and diagnostic centers based on reviews, ratings, specialties, and location.", category: "Healthcare", icon: "🏥", tags: ["hospital", "doctor", "clinic", "healthcare", "medical", "recommendation"], popular: true, trending: true, new: true },
   // ─── File Tools (10) ───
   { id: "zip-tool", name: "ZIP", description: "Create and extract ZIP archives", category: "File Tools", icon: "🗜️", tags: ["zip", "compress", "archive"], popular: true, trending: false, new: false },
   { id: "rar-tool", name: "RAR", description: "Create and extract RAR archives", category: "File Tools", icon: "🗜️", tags: ["rar", "compress", "archive"], popular: false, trending: false, new: false },
@@ -339,6 +341,15 @@ export const services: Service[] = [
   { id: "packing-list", name: "Packing List Generator", description: "Generate smart packing lists for trips", category: "Travel & Localization", icon: "🧳", tags: ["packing", "list", "travel"], popular: false, trending: false, new: false },
   // ─── Family Guardian ───
   { id: "family-guardian", name: "Family Guardian", description: "Parental control dashboard to manage screen time, block apps/websites, and monitor child activity", category: "Parental Controls", icon: "🛡️", tags: ["parental", "control", "children", "screen time"], popular: true, trending: true, new: true },
+  // ─── Language & Translation Suite ───
+  { id: "document-translator", name: "Document Translator", description: "Translate PDF, DOCX, and other documents into 100+ languages while preserving formatting.", category: "Language & Translation", icon: "📑", tags: ["translate", "document", "pdf", "docx", "language"], popular: true, trending: true, new: true },
+  { id: "text-translator", name: "Text & Rich Text Translator", description: "Translate plain or rich text with language auto-detection.", category: "Language & Translation", icon: "✍️", tags: ["translate", "text", "language"], popular: true, trending: false, new: true },
+  { id: "voice-translator", name: "Voice Translator", description: "Real-time speech-to-text and text-to-speech translation.", category: "Language & Translation", icon: "🎤", tags: ["translate", "voice", "speech", "audio"], popular: false, trending: true, new: true },
+  { id: "ai-document-summary", name: "AI Document Summary", description: "Generate executive summaries, key points, and action items from documents.", category: "Language & Translation", icon: "📋", tags: ["ai", "summary", "pdf", "docx"], popular: true, trending: true, new: true },
+  { id: "ai-grammar-check", name: "AI Grammar & Style Check", description: "Correct grammar, spelling, punctuation, and improve writing tone.", category: "Language & Translation", icon: "✅", tags: ["ai", "grammar", "writing", "style"], popular: true, trending: false, new: true },
+  { id: "ai-text-rewriter", name: "AI Text Rewriter", description: "Rewrite text to be shorter, longer, or change the tone to formal, casual, or professional.", category: "Language & Translation", icon: "🔄", tags: ["ai", "rewrite", "paraphrase", "tone"], popular: true, trending: false, new: true },
+  { id: "ai-email-writer", name: "AI Email Writer", description: "Generate professional emails for any situation using templates and AI.", category: "Language & Translation", icon: "✉️", tags: ["ai", "email", "writer", "business"], popular: false, trending: true, new: true },
+  { id: "ai-document-chat", name: "AI Chat with Documents", description: "Upload documents and ask questions to get answers with cited sources.", category: "Language & Translation", icon: "💬", tags: ["ai", "chat", "pdf", "document", "q&a"], popular: true, trending: true, new: true },
 ];
 
 export const getServicesByCategory = (category: string): Service[] => {
@@ -376,4 +387,3 @@ export const searchServices = (query: string): Service[] => {
 export const getServiceById = (id: string): Service | undefined => {
   return services.find((s) => s.id === id);
 };
-

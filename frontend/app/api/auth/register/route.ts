@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
+import mongoose from "mongoose"
 import bcrypt from "bcrypt"
-import clientPromise from "@/lib/mongodb"
+import dbConnect from "@/lib/dbConnect" // Use Mongoose connection
+import User from "@/models/User" // Use the User model
 import {
   isValidCountryCode,
   isValidEmail,
@@ -75,52 +77,57 @@ export async function POST(request: Request) {
     normalizedPhone = normalizedPhoneCandidate
   }
 
-  if (!process.env.MONGODB_URI) {
-    console.error("REGISTER ERROR: Missing MONGODB_URI environment variable.")
-    return jsonError("MONGODB_URI is missing. Please configure MongoDB in .env.local.", 500)
-  }
-
-  let db
   try {
-    const client = await clientPromise
-    db = client.db(process.env.MONGODB_DB_NAME || "smartdocs-ai")
+    await dbConnect();
+    console.log("[Register] DB Connection State:", mongoose.connection.readyState === 1 ? "Connected" : "Disconnected");
   } catch (error) {
-    return errorResponse(error, "Unable to connect to MongoDB.", 500)
+    console.error("REGISTER ERROR: MongoDB connection failed.", error)
+    return errorResponse(error, "Unable to connect to the database.", 500)
   }
 
   try {
-    const users = db.collection("users")
-
+    const identifier = email || normalizedPhone;
+    console.log(`[Register] Checking for existing user with identifier: ${identifier}`);
     if (email) {
-      const existingUser = await users.findOne({ email })
+      const existingUser = await User.findOne({ email }).lean();
+      console.log("[Register] User lookup result:", existingUser ? `Found user with ID: ${existingUser._id}`: "Not found");
       if (existingUser) {
         return jsonError("Email already registered.", 409)
       }
     }
 
     if (normalizedPhone) {
-      const existingPhoneUser = await users.findOne({ phoneNumber: normalizedPhone })
+      const existingPhoneUser = await User.findOne({ phoneNumber: normalizedPhone }).lean();
+      console.log("[Register] Phone lookup result:", existingPhoneUser ? `Found user with ID: ${existingPhoneUser._id}`: "Not found");
       if (existingPhoneUser) {
         return jsonError("Phone number already registered.", 409)
       }
     }
 
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS)
-    const now = new Date()
-    const user = {
+    let passwordHash
+    try {
+      passwordHash = await bcrypt.hash(password, SALT_ROUNDS)
+      console.log("[Register] Password hashing successful.");
+    } catch (error) {
+      console.error("REGISTER ERROR: Password hashing failed.", error)
+      return errorResponse(error, "Failed to process registration data.", 500)
+    }
+
+    console.log("[Register] Creating new user document in 'users' collection.");
+    const newUser = new User({
       fullName,
       email: email || undefined,
       countryCode: countryCode || undefined,
       phoneNumber: normalizedPhone || undefined,
       passwordHash,
-      createdAt: now,
-      updatedAt: now,
-    }
-
-    await users.insertOne(user)
+      provider: "credentials",
+    });
+    await newUser.save();
+    console.log(`[Register] User document created successfully with ID: ${newUser._id}`);
 
     return NextResponse.json({ ok: true, message: "Account created successfully" }, { status: 201 })
   } catch (error) {
-    return errorResponse(error, "Unable to create account.", 500)
+    console.error("REGISTER ERROR: User creation or query failed.", error)
+    return errorResponse(error, "Unable to create account due to a database error.", 500)
   }
 }

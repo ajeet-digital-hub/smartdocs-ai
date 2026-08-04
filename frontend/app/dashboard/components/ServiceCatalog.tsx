@@ -19,6 +19,7 @@ const categories = [
   "OCR & Image Processing",
   "Translation Services",
   "Summarization",
+  "Security",
 ]
 
 const services: Service[] = [
@@ -30,6 +31,7 @@ const services: Service[] = [
   { id: "6", name: "Language Translator", description: "Translate documents across 50+ languages instantly.", category: "Translation Services", initials: "TS" },
   { id: "7", name: "Text Summarizer", description: "Summarize long documents into key points automatically.", category: "Summarization", initials: "SM" },
   { id: "8", name: "Contract Analyzer", description: "Document AI workspace for faster professional results.", category: "Document AI", initials: "DA" },
+  { id: "family-guardian", name: "Family Guardian", description: "Organize family documents and keep important information protected.", category: "Security", initials: "FG" },
 ]
 
 export default function EnterpriseCatalog() {
@@ -136,4 +138,3 @@ export default function EnterpriseCatalog() {
     </section>
   )
 }
-

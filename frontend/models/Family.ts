@@ -1,29 +1,26 @@
-import mongoose, { Document, Model, Schema } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose"
 
 export interface IFamily extends Document {
-  parentId: mongoose.Types.ObjectId;
-  name: string;
-  pairingCode?: string;
-  pairingCodeExpires?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  parentId: mongoose.Types.ObjectId
+  familyName: string
+  subscriptionId?: mongoose.Types.ObjectId; // Reference to FamilySubscription
+  maxChildren: number
+  maxDevices: number
+  createdAt: Date
+  updatedAt: Date
 }
 
 const FamilySchema = new Schema<IFamily>(
   {
     parentId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true, unique: true },
-    name: { type: String, required: true, default: "My Family", trim: true },
-    pairingCode: { type: String },
-    pairingCodeExpires: { type: Date },
+    familyName: { type: String, required: true, trim: true },
+    subscriptionId: { type: Schema.Types.ObjectId, ref: "FamilySubscription" },
+    maxChildren: { type: Number, default: 5 },
+    maxDevices: { type: Number, default: 10 },
   },
   { timestamps: true }
-);
+)
 
-FamilySchema.index({ pairingCode: 1 });
+const Family = (mongoose.models.Family as Model<IFamily>) || mongoose.model<IFamily>("Family", FamilySchema)
 
-const FamilyModel: Model<IFamily> =
-  (mongoose.models.Family as Model<IFamily>) ||
-  mongoose.model<IFamily>("Family", FamilySchema);
-
-export default FamilyModel;
-
+export default Family

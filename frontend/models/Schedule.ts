@@ -1,56 +1,65 @@
-import mongoose, { Document, Model, Schema } from "mongoose";
+import mongoose, { Document, Model, Schema } from "mongoose"
 
-export interface IWebsiteRule {
-  websiteId: mongoose.Types.ObjectId;
-  action: "block" | "allow" | "limit";
-  dailyLimitMinutes?: number;
-}
+export type ScheduleType = "study" | "school" | "sleep" | "free" | "custom"
 
 export interface ISchedule extends Document {
-  childId: mongoose.Types.ObjectId;
-  familyId: mongoose.Types.ObjectId;
-  name: string;
-  type: "study" | "sleep" | "school" | "free" | "custom";
-  startTime: string;
-  endTime: string;
-  daysOfWeek: string[];
-  timezone: string;
-  isActive: boolean;
-  websiteRules: IWebsiteRule[];
-  createdAt: Date;
-  updatedAt: Date;
+  familyId: mongoose.Types.ObjectId
+  childId?: mongoose.Types.ObjectId
+  deviceId?: mongoose.Types.ObjectId
+  name: string
+  type: ScheduleType
+  startTime: string // HH:mm
+  endTime: string // HH:mm
+  days: number[] // 0=Sun, 1=Mon, ..., 6=Sat
+  timezone: string
+  isActive: boolean
+  policyScope: "all" | "specific"
+  blockedCategories: string[]
+  blockedWebsites: string[]
+  blockedApps: string[]
+  allowedCategories: string[]
+  allowedWebsites: string[]
+  allowedApps: string[]
+  sleepMode: boolean
+  emergencyAccessEnabled: boolean
+  policyVersion: number; // Incremented on each change for device sync
+  createdAt: Date
+  updatedAt: Date
 }
-
-const WebsiteRuleSchema = new Schema<IWebsiteRule>(
-  {
-    websiteId: { type: Schema.Types.ObjectId, ref: "WebsitePolicy" },
-    action: { type: String, enum: ["block", "allow", "limit"], required: true },
-    dailyLimitMinutes: { type: Number },
-  },
-  { _id: false }
-);
 
 const ScheduleSchema = new Schema<ISchedule>(
   {
-    childId: { type: Schema.Types.ObjectId, ref: "Child", required: true, index: true },
     familyId: { type: Schema.Types.ObjectId, ref: "Family", required: true, index: true },
+    childId: { type: Schema.Types.ObjectId, ref: "Child", index: true },
+    deviceId: { type: Schema.Types.ObjectId, ref: "Device", index: true },
     name: { type: String, required: true, trim: true },
-    type: { type: String, enum: ["study", "sleep", "school", "free", "custom"], required: true },
+    type: {
+      type: String,
+      enum: ["study", "school", "sleep", "free", "custom"],
+      required: true,
+    },
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
-    daysOfWeek: [{ type: String, enum: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] }],
+    days: [{ type: Number, min: 0, max: 6 }],
     timezone: { type: String, default: "UTC" },
     isActive: { type: Boolean, default: true },
-    websiteRules: [WebsiteRuleSchema],
+    policyScope: { type: String, enum: ["all", "specific"], default: "all" },
+    blockedCategories: [{ type: String }],
+    blockedWebsites: [{ type: String }],
+    blockedApps: [{ type: String }],
+    allowedCategories: [{ type: String }],
+    allowedWebsites: [{ type: String }],
+    allowedApps: [{ type: String }],
+    sleepMode: { type: Boolean, default: false },
+    emergencyAccessEnabled: { type: Boolean, default: true },
+    policyVersion: { type: Number, default: 1 },
   },
   { timestamps: true }
-);
+)
 
-ScheduleSchema.index({ familyId: 1, isActive: 1 });
+ScheduleSchema.index({ familyId: 1, childId: 1 })
 
-const Schedule: Model<ISchedule> =
-  (mongoose.models.Schedule as Model<ISchedule>) ||
-  mongoose.model<ISchedule>("Schedule", ScheduleSchema);
+const Schedule = (mongoose.models.Schedule as Model<ISchedule>) ||
+  mongoose.model<ISchedule>("Schedule", ScheduleSchema)
 
-export default Schedule;
-
+export default Schedule

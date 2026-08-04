@@ -1,30 +1,35 @@
-"use client";
+"use client"
 
-import { useSession } from "next-auth/react";
-import { WelcomeModal } from "@/components/WelcomeModal";
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
+import DashboardLayout from "./components/DashboardLayout"
 
-export default function DashboardPage() {
-  const { data: session, status } = useSession();
+export default function Dashboard() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login")
+    }
+  }, [status, router])
+
+  const email = session?.user?.email || ""
+  const user = {
+    name: session?.user?.name || email.split("@")[0],
+    email,
+  }
 
   if (status === "loading") {
-    return <div style={{ color: "white", textAlign: "center", paddingTop: "50px" }}>Loading...</div>;
-  }
-
-  if (status === "unauthenticated" || !session?.user) {
-    // This should be handled by middleware, but as a fallback:
-    if (typeof window !== "undefined") window.location.href = "/login";
-    return null;
-  }
-
-  return (
-    <>
-      {session.user.hasSeenWelcome === false && <WelcomeModal />}
-      <div style={{ padding: "40px 24px", maxWidth: "1280px", margin: "0 auto" }}>
-        <div style={{ background: "#FFFDF7", borderRadius: "20px", padding: "44px 48px 40px" }}>
-          <h1 style={{ fontSize: "29px", fontWeight: 700, color: "#241F1B", margin: "0 0 8px" }}>Welcome, {session.user.fullName || 'User'}!</h1>
-          <p style={{ fontSize: "15px", color: "#6E6459", marginBottom: "28px" }}>This is your dashboard.</p>
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <div className="rounded-3xl bg-white px-6 py-4 shadow-lg ring-1 ring-black/5 dark:bg-slate-900">
+          Loading dashboard...
         </div>
       </div>
-    </>
-  );
+    )
+  }
+
+  return <DashboardLayout user={user} />
 }
