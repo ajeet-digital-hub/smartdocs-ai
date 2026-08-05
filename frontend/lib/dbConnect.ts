@@ -2,7 +2,7 @@ import mongoose, { Mongoose } from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!MONGODB_URI) {
+if (!MONGODB_URI || MONGODB_URI.trim() === "") {
   throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
 }
 
@@ -32,7 +32,7 @@ async function dbConnect(): Promise<Mongoose> {
     const opts = {
       bufferCommands: false,
     };
-    const dbName = MONGODB_URI ? (new URL(MONGODB_URI).pathname.substring(1) || process.env.MONGODB_DB_NAME || '(Not Set)') : '(Not Set)';
+const dbName = new URL(MONGODB_URI!).pathname.substring(1) || process.env.MONGODB_DB_NAME || '(Not Set)';
     console.log(`[dbConnect] MONGODB_URI exists: ${!!MONGODB_URI}`);
     console.log(`[dbConnect] Attempting to connect to MongoDB... DB: ${dbName}`);
     try {

@@ -17,12 +17,12 @@ import { INotification } from "@/models/Notification";
 
 // ─── Family ───
 
-export async function getFamily(): Promise<{ ok: boolean; family: IFamily }> {
-  return apiFetch<{ ok: boolean; family: IFamily }>("/api/family-guardian/family", { params: { populateSubscription: 'true' } })
+export async function getFamily(): Promise<{ ok: boolean; family: IFamily; error?: string }> {
+  return apiFetch<{ ok: boolean; family: IFamily; error?: string }>("/api/family-guardian/family", { params: { populateSubscription: 'true' } })
 }
 
-export async function updateFamily(data: { familyName?: string }): Promise<{ ok: boolean; family: IFamily }> {
-  return apiFetch<{ ok: boolean; family: IFamily }>("/api/family-guardian/family", {
+export async function updateFamily(data: { familyName?: string }): Promise<{ ok: boolean; family: IFamily; error?: string }> {
+  return apiFetch<{ ok: boolean; family: IFamily; error?: string }>("/api/family-guardian/family", {
     method: "PUT",
     body: JSON.stringify(data),
   })
@@ -31,7 +31,7 @@ export async function updateFamily(data: { familyName?: string }): Promise<{ ok:
 // ─── Children ───
 
 export async function getChildren() {
-  return apiFetch<{ ok: boolean; children: IChild[] }>("/api/family-guardian/children");
+  return apiFetch<{ ok: boolean; children: IChild[]; error?: string }>("/api/family-guardian/children");
 }
 
 export async function getChild(childId: string) {
@@ -43,8 +43,8 @@ export async function createChild(data: {
   age: number
   dateOfBirth?: string
   avatar?: string
-}) : Promise<{ ok: boolean; child: IChild }> {
-  return apiFetch<{ ok: boolean; child: any }>("/api/family-guardian/children", {
+}) : Promise<{ ok: boolean; child: IChild; error?: string }> {
+  return apiFetch<{ ok: boolean; child: IChild; error?: string }>("/api/family-guardian/children", {
     method: "POST", 
     body: JSON.stringify(data),
   })
@@ -66,7 +66,7 @@ export async function deleteChild(childId: string) {
 // ─── Devices ───
 
 export async function getDevices(params?: { childId?: string }) {
-  return apiFetch<{ ok: boolean; devices: IDevice[] }>("/api/family-guardian/devices", { params })
+  return apiFetch<{ ok: boolean; devices: IDevice[]; error?: string }>("/api/family-guardian/devices", { params })
 }
 
 export async function getDevice(deviceId: string) {
@@ -78,7 +78,7 @@ export async function initiatePairing(data: {
   deviceType: string
   deviceName: string
 }) {
-  return apiFetch<{ ok: boolean; pairingCode: string; pairingToken: string; expiresAt: string }>(
+  return apiFetch<{ ok: boolean; pairingCode: string; pairingToken: string; expiresAt: string; error?: string }>(
     "/api/family-guardian/devices/pair",
     { method: "POST", body: JSON.stringify(data) }
   )
@@ -92,28 +92,28 @@ export async function completePairing(pairingCode: string, deviceToken: string) 
 }
 
 export async function renameDevice(deviceId: string, name: string) {
-  return apiFetch<{ ok: boolean; device: IDevice }>(`/api/family-guardian/devices/${deviceId}`, {
+  return apiFetch<{ ok: boolean; device: IDevice; error?: string }>(`/api/family-guardian/devices/${deviceId}`, {
     method: "PUT",
     body: JSON.stringify({ name }),
   })
 }
 
 export async function assignChildToDevice(deviceId: string, childId: string) {
-  return apiFetch<{ ok: boolean; device: IDevice }>(`/api/family-guardian/devices/${deviceId}/assign`, {
+  return apiFetch<{ ok: boolean; device: IDevice; error?: string }>(`/api/family-guardian/devices/${deviceId}/assign`, {
     method: "POST",
     body: JSON.stringify({ childId }),
   })
 }
 
 export async function syncDevicePolicies(deviceId: string) {
-  return apiFetch<{ ok: boolean; message: string }>(
+  return apiFetch<{ ok: boolean; message: string; error?: string }>(
     `/api/family-guardian/devices/${deviceId}/sync`,
     { method: "POST" }
   )
 }
 
 export async function revokeDevice(deviceId: string) {
-  return apiFetch<{ ok: boolean; message: string }>(
+  return apiFetch<{ ok: boolean; message: string; error?: string }>(
     `/api/family-guardian/devices/${deviceId}/revoke`,
     { method: "POST" }
   )
@@ -171,20 +171,25 @@ export async function sendHeartbeat(data: {
 
 // ─── Policies ───
 
-export async function getAppPolicies(params?: { childId?: string }): Promise<{ ok: boolean; policies: IAppPolicy[] }> {
-  return apiFetch<{ ok: boolean; policies: IAppPolicy[] }>("/api/family-guardian/policies", {
+export async function getAppPolicies(params?: { childId?: string }): Promise<{ ok: boolean; policies: IAppPolicy[]; error?: string }> {
+  return apiFetch<{ ok: boolean; policies: IAppPolicy[]; error?: string }>("/api/family-guardian/policies", {
     params,
   })
 }
 
-export async function createAppPolicy(data: Partial<IAppPolicy>): Promise<{ ok: boolean; policy: IAppPolicy }> {
-  return apiFetch<{ ok: boolean; policy: IAppPolicy }>("/api/family-guardian/policies", {
+type AppPolicyInput = Omit<Partial<IAppPolicy>, "_id" | "childId" | "familyId"> & {
+  childId?: string
+  familyId?: string
+}
+
+export async function createAppPolicy(data: AppPolicyInput): Promise<{ ok: boolean; policy: IAppPolicy; error?: string }> {
+  return apiFetch<{ ok: boolean; policy: IAppPolicy; error?: string }>("/api/family-guardian/policies", {
     method: "POST",
     body: JSON.stringify(data),
   })
 }
 
-export async function updateAppPolicy(policyId: string, data: Partial<IAppPolicy>): Promise<{ ok: boolean; policy: IAppPolicy }> {
+export async function updateAppPolicy(policyId: string, data: AppPolicyInput): Promise<{ ok: boolean; policy: IAppPolicy }> {
   return apiFetch<{ ok: boolean; policy: IAppPolicy }>(`/api/family-guardian/policies/${policyId}`, {
     method: "PUT",
     body: JSON.stringify(data),
@@ -200,14 +205,14 @@ export async function deleteAppPolicy(policyId: string) {
 
 // ─── Website Policies ───
 
-export async function getWebsitePolicies(params?: { childId?: string }): Promise<{ ok: boolean; policies: IWebsitePolicy[] }> {
-  return apiFetch<{ ok: boolean; policies: IWebsitePolicy[] }>("/api/family-guardian/policies/websites", {
+export async function getWebsitePolicies(params?: { childId?: string }): Promise<{ ok: boolean; policies: IWebsitePolicy[]; error?: string }> {
+  return apiFetch<{ ok: boolean; policies: IWebsitePolicy[]; error?: string }>("/api/family-guardian/policies/websites", {
     params,
   })
 }
 
-export async function createWebsitePolicy(data: Partial<IWebsitePolicy>): Promise<{ ok: boolean; policy: IWebsitePolicy }> {
-  return apiFetch<{ ok: boolean; policy: IWebsitePolicy }>("/api/family-guardian/policies/websites", {
+export async function createWebsitePolicy(data: Partial<IWebsitePolicy>): Promise<{ ok: boolean; policy: IWebsitePolicy; error?: string }> {
+  return apiFetch<{ ok: boolean; policy: IWebsitePolicy; error?: string }>("/api/family-guardian/policies/websites", {
     method: "POST",
     body: JSON.stringify(data),
   })
@@ -221,7 +226,7 @@ export async function updateWebsitePolicy(policyId: string, data: Partial<IWebsi
 }
 
 export async function deleteWebsitePolicy(policyId: string) {
-  return apiFetch<{ ok: boolean; message: string }>(
+  return apiFetch<{ ok: boolean; message: string; error?: string }>(
     `/api/family-guardian/policies/websites/${policyId}`,
     { method: "DELETE" }
   )
@@ -238,15 +243,15 @@ export async function getSchedules(params?: { childId?: string }): Promise<{ ok:
   return apiFetch<{ ok: boolean; schedules: ISchedule[] }>("/api/family-guardian/schedules", { params })
 }
 
-export async function createSchedule(data: Partial<ISchedule>): Promise<{ ok: boolean; schedule: ISchedule }> {
-  return apiFetch<{ ok: boolean; schedule: ISchedule }>("/api/family-guardian/schedules", {
+export async function createSchedule(data: Partial<ISchedule>): Promise<{ ok: boolean; schedule: ISchedule; error?: string }> {
+  return apiFetch<{ ok: boolean; schedule: ISchedule; error?: string }>("/api/family-guardian/schedules", {
     method: "POST",
     body: JSON.stringify(data),
   })
 }
 
-export async function updateSchedule(scheduleId: string, data: Partial<ISchedule>): Promise<{ ok: boolean; schedule: ISchedule }> {
-  return apiFetch<{ ok: boolean; schedule: ISchedule }>(`/api/family-guardian/schedules/${scheduleId}`, {
+export async function updateSchedule(scheduleId: string, data: Partial<ISchedule>): Promise<{ ok: boolean; schedule: ISchedule; error?: string }> {
+  return apiFetch<{ ok: boolean; schedule: ISchedule; error?: string }>(`/api/family-guardian/schedules/${scheduleId}`, {
     method: "PUT",
     body: JSON.stringify(data),
   })
@@ -313,8 +318,8 @@ export async function redeemReward(rewardId: string) {
 
 // ─── Unlock Requests ───
 
-export async function getUnlockRequests(params?: { status?: string }): Promise<{ ok: boolean; requests: IUnlockRequest[] }> {
-  return apiFetch<{ ok: boolean; requests: IUnlockRequest[] }>("/api/family-guardian/unlock-requests", {
+export async function getUnlockRequests(params?: { status?: string }): Promise<{ ok: boolean; requests: IUnlockRequest[]; error?: string }> {
+  return apiFetch<{ ok: boolean; requests: IUnlockRequest[]; error?: string }>("/api/family-guardian/unlock-requests", {
     params,
   })
 }
@@ -323,8 +328,8 @@ export async function respondToUnlockRequest(
   requestId: string,
   action: "approve" | "deny",
   durationMinutes?: number
-) : Promise<{ success: boolean; request: IUnlockRequest }> {
-  return apiFetch<{ success: boolean; request: IUnlockRequest }>(
+) : Promise<{ success: boolean; request: IUnlockRequest; error?: string }> {
+  return apiFetch<{ success: boolean; request: IUnlockRequest; error?: string }>(
     `/api/family-guardian/unlock-requests/${requestId}`,
     {
       method: "POST",
@@ -335,16 +340,16 @@ export async function respondToUnlockRequest(
 
 // ─── Emergency Access ───
 
-export async function getEmergencyRequests(): Promise<{ ok: boolean; requests: any[] }> { // TODO: Type requests
-  return apiFetch<{ ok: boolean; requests: any[] }>("/api/family-guardian/emergency-access") // TODO: Type requests
+export async function getEmergencyRequests(): Promise<{ ok: boolean; requests: any[]; error?: string }> { // TODO: Type requests
+  return apiFetch<{ ok: boolean; requests: any[]; error?: string }>("/api/family-guardian/emergency-access") // TODO: Type requests
 }
 
 export async function respondToEmergencyRequest(
   requestId: string,
   action: "approve" | "deny",
   durationMinutes?: number
-) : Promise<{ success: boolean; request: any }> { // TODO: Type request
-  return apiFetch<{ success: boolean; request: any }>(`/api/family-guardian/emergency-access/${requestId}`,
+) : Promise<{ ok: boolean; request: any; error?: string }> { // TODO: Type request
+  return apiFetch<{ ok: boolean; request: any; error?: string }>(`/api/family-guardian/emergency-access/${requestId}`,
     {
       method: "POST",
       body: JSON.stringify({ action, durationMinutes }),
@@ -358,8 +363,8 @@ export async function getActivityLogs(params?: {
   childId?: string
   limit?: string
   offset?: string
-}) : Promise<{ ok: boolean; logs: any[]; total: number }> { // TODO: Type logs
-  return apiFetch<{ ok: boolean; logs: any[]; total: number }>( // TODO: Type logs
+}) : Promise<{ ok: boolean; logs: any[]; total: number; error?: string }> { // TODO: Type logs
+  return apiFetch<{ ok: boolean; logs: any[]; total: number; error?: string }>( // TODO: Type logs
     "/api/family-guardian/activity-logs",
     { params }
   )
@@ -367,15 +372,16 @@ export async function getActivityLogs(params?: {
 
 // ─── Analytics ───
 
-export async function getAnalytics(childId: string, params?: { period?: string }): Promise<{ ok: boolean; analytics: any }> { // TODO: Type analytics
-  return apiFetch<{ ok: boolean; analytics: any }>(`/api/family-guardian/analytics/${childId}`, { params }) // TODO: Type analytics
+export async function getAnalytics(childId?: string, params?: { period?: string }): Promise<{ ok: boolean; analytics: any; error?: string }> { // TODO: Type analytics
+  const endpoint = childId ? `/api/family-guardian/analytics/${childId}` : "/api/family-guardian/analytics"
+  return apiFetch<{ ok: boolean; analytics: any; error?: string }>(endpoint, { params }) // TODO: Type analytics
 }
 
 // ─── Notifications ───
 
-export async function getNotifications(params?: { unreadOnly?: string }): Promise<{ ok: boolean; notifications: INotification[]; unreadCount: number }> {
+export async function getNotifications(params?: { unreadOnly?: string; limit?: number }): Promise<{ ok: boolean; notifications: INotification[]; unreadCount: number }> {
   return apiFetch<{ ok: boolean; notifications: INotification[]; unreadCount: number }>("/api/family-guardian/notifications", {
-    params,
+    params: params as Record<string, string>,
   })
 }
 
@@ -390,4 +396,17 @@ export async function markAllNotificationsRead() {
   return apiFetch<{ ok: boolean; message: string }>("/api/family-guardian/notifications/read-all", {
     method: "POST",
   })
+}
+
+// ─── AI Insight ───
+
+export async function generateFamilyInsight(): Promise<{
+  ok: boolean;
+  insight?: string;
+  summary?: any;
+  error?: string;
+}> {
+  return apiFetch<{ ok: boolean; insight?: string; summary?: any; error?: string }>(
+    "/api/family-guardian/insight"
+  )
 }

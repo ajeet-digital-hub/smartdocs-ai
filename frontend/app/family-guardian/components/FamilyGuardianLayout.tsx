@@ -10,9 +10,10 @@ interface Props {
   children: React.ReactNode
   title: string
   subtitle?: string
+  actions?: React.ReactNode
 }
 
-export default function FamilyGuardianLayout({ children, title, subtitle }: Props) {
+export default function FamilyGuardianLayout({ children, title, subtitle, actions }: Props) {
   const { data: session, status } = useSession()
   const [darkMode, setDarkMode] = useState(false)
   const router = useRouter()
@@ -48,13 +49,16 @@ export default function FamilyGuardianLayout({ children, title, subtitle }: Prop
           <Header user={user} darkMode={darkMode} toggleDarkMode={() => setDarkMode(!darkMode)} />
 
           <main className="p-6">
-            <div className="mb-6">
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h1>
+<div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h1>
+                </div>
+                {subtitle && (
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
+                )}
               </div>
-              {subtitle && (
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
-              )}
+              {actions && <div>{actions}</div>}
             </div>
 
             {children}
