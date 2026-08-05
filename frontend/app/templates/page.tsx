@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense, FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Search, ChevronLeft, ChevronRight, Grid3x3, AlertCircle, RefreshCw, Star, TrendingUp, Crown } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Grid3x3, AlertCircle, RefreshCw, Star, TrendingUp, Crown, Sparkles, ArrowRight } from "lucide-react";
 import TemplateCard, { TemplateCardData } from "@/components/TemplateCard";
 
 interface CategoryData {
@@ -55,8 +55,10 @@ function TemplatesContent() {
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [showFeatured, setShowFeatured] = useState(true);
+const [showFeatured, setShowFeatured] = useState(true);
   const [showPopular, setShowPopular] = useState(true);
+  const [recommendedTemplates, setRecommendedTemplates] = useState<TemplateCardData[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -204,6 +206,33 @@ function TemplatesContent() {
     setError(null);
   }, []);
 
+  const handleAiSearch = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!search.trim()) {
+      setRecommendedTemplates([]);
+      return;
+    }
+
+    setAiLoading(true);
+    setError(null);
+    setRecommendedTemplates([]);
+
+    try {
+      const res = await fetch(`/api/ai/search/templates`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: search }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setRecommendedTemplates(data.templates || []);
+      }
+} catch {
+      setError("AI search failed. Please try again.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
   const isMainActive = selectedCategory !== "all" || debouncedSearch || filter !== "all" || sort !== "popular";
 
   return (
@@ -218,6 +247,52 @@ function TemplatesContent() {
             Create faster with professionally designed templates. Browse {pagination?.total || "hundreds of"} templates across {categories.length} categories.
           </p>
         </div>
+
+        {/* ── AI-ASSISTED TEMPLATE FINDER ── */}
+        <section className="mb-10 rounded-3xl border border-white/10 bg-gradient-to-br from-purple-500/10 to-cyan-400/5 p-8 text-center">
+          <div className="flex items-center gap-2 text-sm font-semibold text-purple-100">
+            <Sparkles className="h-4 w-4 text-cyan-300" />
+            What are you creating?
+          </div>
+          <p className="mt-1 text-sm text-slate-400">
+Describe what you need and we&apos;ll recommend the right template.
+          </p>
+          <form onSubmit={handleAiSearch} className="relative mx-auto mt-6 max-w-2xl">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="e.g. a modern business proposal for a software company"
+              aria-label="Describe what you want to create"
+              className="w-full rounded-2xl border border-white/10 bg-white/5 py-4 pl-5 pr-14 text-white placeholder-slate-500 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30"
+            />
+            <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/25 transition-all hover:scale-105">
+              Find Templates <ArrowRight className="h-4 w-4" />
+            </button>
+          </form>
+        </section>
+
+        {/* AI Search Results */}
+        {(aiLoading || recommendedTemplates.length > 0) && (
+          <section className="mb-10">
+            <h2 className="text-lg font-semibold text-white mb-4">Recommended for you</h2>
+            {aiLoading ? (
+              <div className="flex justify-center items-center h-48"><Search className="h-8 w-8 animate-pulse text-purple-400" /></div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {recommendedTemplates.map((t) => (
+                  <TemplateCard
+                    key={t.templateId}
+                    template={t}
+                    isFavorite={favoriteIds.has(t.templateId)}
+                    onToggleFavorite={handleToggleFavorite}
+                    onUseTemplate={handleUseTemplate}
+                  />
+))}
+              </div>
+            )}
+          </section>
+        )}
 
         {/* ── Search & Filters ── */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

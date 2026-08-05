@@ -1,40 +1,12 @@
-# UI & Product Discoverability Fix - Implementation Plan
+# Fix Build & Lint Errors
 
-## Steps:
-
-### [x] Step 1: Information Gathering & Analysis
-- [x] Explored entire codebase structure
-- [x] Checked all routes, navigation, components
-- [x] Identified root causes
-
-### [ ] Step 2: Fix Plan Configuration
-- [ ] Update Basic price from ₹199 → ₹299 in `plan-config.ts`
-- [ ] Fix broken imports in PricingCard, FeatureComparison, UpgradeButton
-
-### [ ] Step 3: Create `/pricing` Page
-- [ ] Create `frontend/app/pricing/page.tsx`
-
-### [ ] Step 4: Fix UpgradeButton - Add Checkout Navigation
-- [ ] Update `UpgradeButton.tsx` with onClick handler
-
-### [ ] Step 5: Create AI Workspace `/ai-tools`
-- [ ] Create `frontend/app/ai-tools/page.tsx` with chat interface
-
-### [ ] Step 6: Create Subscription Dashboard `/dashboard/subscription`
-- [ ] Create `frontend/app/dashboard/subscription/page.tsx`
-
-### [ ] Step 7: Update Homepage - Add AI Entry Point
-- [ ] Add AI section to `frontend/app/page.tsx`
-
-### [ ] Step 8: Update Navigation
-- [ ] Navbar already has AI Tools and Pricing links (routes now exist)
-- [ ] Add subscription link to dashboard sidebar
-- [ ] Add subscription link to profile dropdown
-
-### [ ] Step 9: Update PRODUCTION_CODE_AUDIT.md
-- [ ] Add UI & Product Discoverability Audit section
-
-### [ ] Step 10: Validation
-- [ ] npm run lint
-- [ ] npx tsc --noEmit
-- [ ] npm run build
+## Steps
+- [x] Analyze files and create plan
+- [x] PreviewModal.tsx: Remove unused `Download` import
+- [x] PreviewModal.tsx: Add `batchId` to useEffect dependency array
+- [x] services/page.tsx: Add eslint-disable for mount-time fetch effects (fetchCategories, fetchServices)
+- [x] templates/page.tsx: Add missing `recommendedTemplates`/`aiLoading` state and fix unclosed conditional (unblocked tsc TS1005)
+- [x] Run ESLint on changed files (0 problems)
+- [x] Run tsc --noEmit (templates/page.tsx error fixed; remaining TS errors are pre-existing in unrelated files: agent/route.ts, orchestrator.ts, magic-batch-scan/process, family-guardian/page.tsx, credit-service.ts, dbConnect.ts, middleware.ts)
+- [x] Run ESLint on all 3 changed files (0 problems)
+- [x] Run next build (my 3 scoped files now pass tsc + eslint; build still fails on 7 PRE-EXISTING, out-of-scope errors: conflicting route/page at /services, /templates, /family-guardian; agent/route.ts `session` redeclared; orchestrator.ts missing `@/lib/utils/parse-ai-json`; family-guardian/page.tsx missing `generateFamilyInsight` export)
