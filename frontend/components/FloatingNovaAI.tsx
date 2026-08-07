@@ -336,26 +336,26 @@ export default function FloatingNovaAI({ variant = "floating", placeholder }: Fl
     );
   }
 
-  // Conditional theme classes for the hero (clean professional light) vs the floating dark widget.
+  // Conditional theme classes for the hero (premium light workspace) vs the floating dark widget.
   const isLight = isHero;
+  const accent = isLight ? "bg-indigo-600 text-white" : "bg-gradient-to-br from-purple-500 to-cyan-400 shadow-lg shadow-purple-500/30";
+  // The hero card is the centrepiece: a layered premium surface with a soft ring.
   const panelTheme = isLight
-    ? "border-slate-200 bg-white shadow-xl shadow-slate-200/60"
+    ? "border-slate-200/90 bg-white shadow-[0_20px_60px_-20px_rgba(16,24,40,0.18)] ring-1 ring-black/[0.02]"
     : "border-white/10 bg-slate-950/80 shadow-2xl shadow-purple-950/40 backdrop-blur-xl";
-  const headerBorder = isLight ? "border-slate-200" : "border-white/10";
-  const iconBox = isLight
-    ? "bg-slate-900 text-white shadow-sm"
-    : "bg-gradient-to-br from-purple-500 to-cyan-400 shadow-lg shadow-purple-500/30";
+  const headerBorder = isLight ? "border-slate-200/80" : "border-white/10";
+  const iconBox = isLight ? accent : "bg-gradient-to-br from-purple-500 to-cyan-400 shadow-lg shadow-purple-500/30";
   const statusText = isLight ? "text-emerald-600" : "text-emerald-300";
-  const bodyBorder = isLight ? "border-slate-200" : "border-white/10";
+  const bodyBorder = isLight ? "border-slate-200/80" : "border-white/10";
   const subtleText = isLight ? "text-slate-500" : "text-slate-500";
-  const subText = isLight ? "text-slate-600" : "text-slate-300/80";
+  const subText = isLight ? "text-slate-500" : "text-slate-300/80";
   const cardText = isLight ? "text-slate-900" : "text-white";
   const quickBtn = isLight
-    ? "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-400 hover:bg-slate-100"
+    ? "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100"
     : "border-white/10 bg-white/[0.04] text-slate-200 hover:border-purple-400/40 hover:bg-purple-500/10";
-  const quickIcon = isLight ? "text-slate-500" : "text-purple-300";
+  const quickIcon = isLight ? "text-indigo-600" : "text-purple-300";
   const promptBtn = isLight
-    ? "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-400 hover:text-slate-900"
+    ? "border-slate-200 bg-slate-50 text-slate-600 hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50/50"
     : "border-white/10 px-2.5 py-1.5 text-[10px] text-slate-300 hover:border-cyan-400/40 hover:text-white";
   const userBubble = isLight
     ? "rounded-br-md bg-slate-900 text-white"
@@ -367,21 +367,31 @@ export default function FloatingNovaAI({ variant = "floating", placeholder }: Fl
     ? "border border-red-300 bg-red-50 text-red-600"
     : "border border-red-500/30 bg-red-500/10 text-red-300";
   const inputBg = isLight
-    ? "border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-slate-300"
+    ? "border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
     : "border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-purple-400 focus:ring-1 focus:ring-purple-500/30";
   const inputBtn = isLight
-    ? "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+    ? "text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
     : "text-slate-400 hover:bg-white/10 hover:text-purple-300";
   const inputBtnActiveListening = isLight
     ? "animate-pulse bg-red-100 text-red-500"
     : "animate-pulse bg-red-500/20 text-red-400";
   const inputBtnActiveVoice = isLight
-    ? "bg-slate-100 text-slate-700"
+    ? "bg-indigo-50 text-indigo-600"
     : "bg-purple-500/15 text-purple-200";
   const sendBtn = isLight
-    ? "bg-slate-900 text-white shadow-sm hover:bg-slate-800"
+    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/20 hover:bg-indigo-700"
     : "bg-gradient-to-r from-purple-600 to-cyan-500 p-2 text-white shadow-lg hover:scale-105";
-  const voiceHint = isLight ? "text-slate-600" : "text-purple-200";
+  const voiceHint = isLight ? "text-slate-500" : "text-purple-200";
+
+  // Hero-only quick capability chips shown under the input.
+  const heroCapabilities = [
+    { label: "Analyze PDF", icon: FileSearch },
+    { label: "Create document", icon: FileText },
+    { label: "Summarize", icon: Sparkles },
+    { label: "Edit image", icon: ImageIcon },
+    { label: "Translate", icon: Bot },
+    { label: "Automate", icon: Paperclip },
+  ];
 
   return (
     <section
@@ -415,15 +425,24 @@ export default function FloatingNovaAI({ variant = "floating", placeholder }: Fl
       </div>
 
       {/* ── Chat / Greeting Area ── */}
-      <div className={`${isHero ? "max-h-[26rem] min-h-[18rem] p-5" : "max-h-[22rem] min-h-[15rem] p-4"} space-y-3 overflow-y-auto`}>
+      <div className={`${isHero ? "max-h-[22rem] min-h-[15rem] p-6 text-center" : "max-h-[22rem] min-h-[15rem] p-4"} space-y-3 overflow-y-auto`}>
         {messages.length === 0 && !isLoading && (
-          <div className="space-y-4">
-            {/* Greeting */}
-            <div className={`rounded-2xl border p-3.5 ${isLight ? "border-slate-200 bg-slate-50" : "border-purple-400/15 bg-gradient-to-br from-purple-500/15 to-cyan-500/5"}`}>
-              <p className={`${isHero ? "text-base" : "text-sm"} font-medium ${cardText}`}>Hi! I'm {ASSISTANT_NAME}.</p>
-              <p className={`mt-1 ${isHero ? "text-sm" : "text-xs"} leading-relaxed ${subText}`}>
-                Ask anything. I can create documents, analyze PDFs, edit images, convert files, and automate your work.
+          <div className={isHero ? "space-y-4" : "space-y-4"}>
+            {/* Greeting — centered & editorial for the hero card */}
+            <div className={`${isHero ? "flex flex-col items-center px-2 py-3" : ""}`}>
+              <p className={`${isHero ? "text-xl sm:text-2xl" : "text-sm"} font-semibold tracking-tight ${cardText}`}>
+                {isHero ? "Good morning." : `Hi! I'm ${ASSISTANT_NAME}.`}
               </p>
+              {isHero ? (
+                <p className={`mt-2 max-w-md text-sm leading-relaxed ${subText}`}>
+                  What would you like to get done? I can create documents, analyze PDFs,
+                  work with images, summarize content and automate everyday tasks.
+                </p>
+              ) : (
+                <p className={`mt-1 ${isHero ? "text-sm" : "text-xs"} leading-relaxed ${subText}`}>
+                  Ask anything. I can create documents, analyze PDFs, edit images, convert files, and automate your work.
+                </p>
+              )}
             </div>
 
             {/* Quick Actions — only for the floating widget; hero stays focused on the input */}
@@ -583,10 +602,21 @@ export default function FloatingNovaAI({ variant = "floating", placeholder }: Fl
             {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : <Send className={`${isHero ? "h-5 w-5" : "h-4 w-4"}`} />}
           </button>
         </div>
-        {isHero && messages.length === 0 && (
-          <p className={`mt-2.5 text-center text-xs leading-relaxed ${subText}`}>
-            Ask me to create a document, analyze a PDF, edit an image, summarize something, or help you with your work...
-          </p>
+        {isHero && (
+          <div className="mt-3">
+            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5">
+              {heroCapabilities.map(({ label, icon: Icon }) => (
+                <button
+                  key={label}
+                  onClick={() => sendMessage(label)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-indigo-300 hover:bg-indigo-50/60 hover:text-indigo-700"
+                >
+                  <Icon className="h-3 w-3 text-indigo-600" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
         {voiceState !== "idle" && (
           <p className={`mt-2 text-[10px] font-medium ${voiceHint}`}>
@@ -598,6 +628,15 @@ export default function FloatingNovaAI({ variant = "floating", placeholder }: Fl
           </p>
         )}
       </div>
+
+      {/* Subtle "product" footer bar for the hero card */}
+      {isHero && messages.length === 0 && (
+        <div className={`border-t ${bodyBorder} px-6 py-3 text-center`}>
+          <p className={`text-[11px] leading-relaxed ${subText}`}>
+            Chat, voice or attach a file — SmartDocs AI will use the right tool for the job.
+          </p>
+        </div>
+      )}
     </section>
   );
 }
