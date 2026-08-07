@@ -64,10 +64,10 @@ features: ["AI_CHAT_LIMITED", "CHAT_HISTORY_1H", "TEMPORARY_FILES_AUTO_DELETE", 
     limits: { storageGB: 0, aiCreditsMonthly: 50, maxChatHistoryDays: 1 },
     supportLabel: "Community",
   },
-  {
+{
     id: "basic",
     name: "Basic",
-    price: 299,
+    price: 49,
     currency: "INR",
     billingCycle: "monthly",
     features: ["AI_CHAT_UNLIMITED", "CHAT_HISTORY_7D", "PDF_TOOLS", "OCR_SCANNER", "PHOTO_TOOL", "BASIC_IMAGE_ANALYSIS", "TEMPLATES", "TEMPLATES_PREMIUM"],
