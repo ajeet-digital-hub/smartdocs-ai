@@ -17,14 +17,16 @@ export default function DashboardSlugPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const u = localStorage.getItem("sd_user");
-    if (!u) {
-      setUser({ name: "Guest", email: "guest@smartdocs.ai" });
+    setTimeout(() => {
+      const u = localStorage.getItem("sd_user");
+      if (!u) {
+        setUser({ name: "Guest", email: "guest@smartdocs.ai" });
+        setLoading(false);
+        return;
+      }
+      setUser({ name: u.includes("@") ? u.split("@")[0] : u, email: u });
       setLoading(false);
-      return;
-    }
-    setUser({ name: u.includes("@") ? u.split("@")[0] : u, email: u });
-    setLoading(false);
+    }, 0);
   }, []);
 
   if (loading) {

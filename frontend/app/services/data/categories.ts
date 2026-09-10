@@ -193,5 +193,13 @@ export const categories: Category[] = [
     gradient: "from-yellow-600 to-amber-500",
     count: 8,
   },
+  {
+    id: "parental-controls",
+    name: "Parental Controls",
+    icon: "👨‍👩‍👧‍👦",
+    color: "#a855f7",
+    gradient: "from-purple-500 to-cyan-500",
+    count: 1,
+  },
 ];
 

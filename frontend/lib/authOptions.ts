@@ -23,26 +23,74 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // Check if there is an existing connection before creating a new one
-        if (mongoose.connection.readyState !== 1) {
-          if (!process.env.MONGODB_URI) throw new Error("MONGODB_URI not set");
-          await mongoose.connect(process.env.MONGODB_URI);
+        // Early credential validation (no DB needed)
+        if (!credentials?.email || !credentials.password) {
+          return null;
         }
 
-        if (!credentials?.email || !credentials.password) return null;
+        const normalizedEmail = credentials.email.toLowerCase().trim();
 
-        const user = await User.findOne({ email: credentials.email });
-        if (!user || !user.passwordHash) return null;
+        // Establish DB connection — failures here are INFRASTRUCTURE errors, not auth errors
+        try {
+          if (mongoose.connection.readyState !== 1) {
+            if (!process.env.MONGODB_URI) {
+              console.error("AUTHORIZE: MONGODB_URI not set");
+              return null;
+            }
+            await mongoose.connect(process.env.MONGODB_URI, {
+              serverSelectionTimeoutMS: 5000,
+              dbName: process.env.MONGODB_DB_NAME || "smartdocs-ai",
+            });
+          }
+        } catch (error) {
+          // Database / TLS / connection error — log safely and throw
+          // DO NOT return null, which would be silently converted to CredentialsSignin
+          const errorName = error instanceof Error ? error.constructor.name : typeof error;
+          console.error("AUTHORIZE DB CONNECTION ERROR:", errorName);
+          throw new Error("Authentication service unavailable. Please try again later.");
+        }
 
-        const isPasswordCorrect = await bcrypt.compare(credentials.password, user.passwordHash);
-        if (!isPasswordCorrect) return null;
+        // Authenticate user — null returns here are genuine invalid-credentials
+        try {
+          const user = await User.findOne({ email: normalizedEmail });
+          if (!user) {
+            return null;
+          }
 
-        return { id: user._id.toString(), email: user.email, fullName: user.fullName, name: user.fullName, image: user.image, hasSeenWelcome: user.hasSeenWelcome };
+          if (!user.passwordHash) {
+            console.error("AUTHORIZE: User found but passwordHash is missing for email:", user.email);
+            return null;
+          }
+
+          const isPasswordCorrect = await bcrypt.compare(credentials.password, user.passwordHash);
+          if (!isPasswordCorrect) {
+            return null;
+          }
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            fullName: user.fullName,
+            name: user.fullName,
+            image: user.image,
+            emailVerified: user.emailVerified,
+            hasSeenWelcome: user.hasSeenWelcome,
+          };
+        } catch (error) {
+          // Unexpected query/comparison error — log safely and throw
+          const errorName = error instanceof Error ? error.constructor.name : typeof error;
+          console.error("AUTHORIZE UNEXPECTED ERROR:", errorName);
+          throw new Error("Authentication failed due to an internal error.");
+        }
       },
     }),
   ],
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
@@ -50,24 +98,30 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.fullName = user.fullName;
         token.picture = user.image;
+        token.emailVerified = (user as any).emailVerified;
         token.hasSeenWelcome = (user as any).hasSeenWelcome;
       }
       if (trigger === "update" && session) {
-        if (session.fullName) token.fullName = session.fullName;
-        if (session.image) token.picture = session.image;
-        if (session.hasSeenWelcome) token.hasSeenWelcome = session.hasSeenWelcome;
+        if (session.fullName !== undefined) token.fullName = session.fullName;
+        if (session.image !== undefined) token.picture = session.image;
+        if (session.hasSeenWelcome !== undefined) token.hasSeenWelcome = session.hasSeenWelcome;
       }
       return token;
     },
     async session({ session, token }) {
-      session.user.id = token.id as string;
-      session.user.fullName = token.fullName as string;
-      session.user.image = token.picture as string;
-      session.user.hasSeenWelcome = token.hasSeenWelcome as boolean;
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.fullName = token.fullName as string;
+        session.user.image = token.picture as string;
+        session.user.emailVerified = token.emailVerified as Date | null;
+        session.user.hasSeenWelcome = token.hasSeenWelcome as boolean;
+      }
       return session;
     },
   },
   pages: {
     signIn: "/login",
   },
+  debug: process.env.NODE_ENV === "development",
 };
+
